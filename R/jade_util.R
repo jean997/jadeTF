@@ -1,11 +1,9 @@
 #' @useDynLib jadeTF
 #' @importFrom Rcpp sourceCpp
 #' @import  genlasso
-#' @import  glmgen
 
 
-#Contains lots of small utility functions
-#Objective functions for trendfiltering an fl penalties
+#Contains small utility functions
 
 h <- function(x, p, pos, ord){
 	D_tf <- getDtfPosSparse(n=p, ord=ord, pos=pos)
@@ -31,13 +29,12 @@ obj_fct <-  function(y, tfits, lambda, gamma, sample.size, subset.wts, fit_var, 
 }
 
 #Fit one sample
-
+#Missing points are imputed using utility from glmgen package even though fitting is done with genlasso package
 fit_one <- function(y, lambda, pos, sds, sample.size, ord){
     p <- length(y)
 		nm <- which(!is.na(y))
 		weights <- 1/sds[nm]
 		equal.wts <- all(weights == weights[1])
-		#Fit using genlasso but use prediction tool from glmgen
 
 		if(equal.wts){
 			tfit.out <- genlasso:::trendfilter(y=y[nm], pos=pos[nm], ord=ord)
@@ -61,10 +58,16 @@ fit_one <- function(y, lambda, pos, sds, sample.size, ord){
 		}
 		co <- coef.genlasso(tfit.out, lambda = l/sample.size, type="primal")$beta
 		if(any(is.na(y))){
-		  tfit.out$x <- tfit.out$pos
-		  tfit.out$k <- tfit.out$ord
-		  class(tfit.out) <- "glmgen"
-		  fit <- glmgen:::predict.trendfilter(tfit.out, type="link", lambda=l/sample.size, x.new=pos)
+		  fit = .Call("tf_predict_R",
+		              sBeta = as.double(co),
+		              sX = as.double(tfit.out$pos),
+		              sN = length(tfit.out$y),
+		              sK = as.integer(tfit.out$ord),
+		              sX0 = as.double(pos),
+		              sN0 = length(pos),
+		              sNLambda = 1,
+		              sFamily = 0,
+		              sZeroTol = as.double(1e-6), package="jadeTF")
 		}else{
 		  fit <- co
 		}
@@ -156,6 +159,8 @@ pairwise_wts <- function(subset.wts, fit_var, sample.size){
 	return(pw)
 }
 
+
+#Helper functions
 get_AtA_diag <- function(y, sds){
 	K <- dim(y)[2]
 	p <- dim(y)[1]
