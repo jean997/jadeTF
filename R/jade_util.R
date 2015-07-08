@@ -1,0 +1,255 @@
+#' @useDynLib jadeTF
+#' @importFrom Rcpp sourceCpp
+#' @import  genlasso
+#' @import  glmgen
+
+
+#Contains lots of small utility functions
+#Objective functions for trendfiltering an fl penalties
+
+h <- function(x, p, pos, ord){
+	D_tf <- getDtfPosSparse(n=p, ord=ord, pos=pos)
+	return(sum(abs ( D_tf %*% x)))
+}
+
+#JADE Objective function for trend filtering problem
+obj_fct <-  function(y, tfits, lambda, gamma, sample.size, subset.wts, fit_var, pos, ord){
+
+		p <- dim(y)[1]
+		K <- dim(y)[2]
+
+		obj_value <- 0
+		for(j in 1:K){
+			obj_value <- obj_value + (sample.size[j]/2)*sum((y[,j]-tfits[,j])^2) + lambda[j]*h(tfits[,j], p, pos, ord)
+			if(j==K) next
+			for (i in (j+1):K){
+				pen <- gamma*sum(abs(tfits[,j]-tfits[,i])*subset.wts[[j]][[i-j]]*(sqrt(fit_var[,i] + fit_var[,j])))
+				obj_value <- obj_value + pen
+			}
+		}
+		return(obj_value)
+}
+
+#Fit one sample
+
+fit_one <- function(y, lambda, pos, sds, sample.size, ord){
+    p <- length(y)
+		nm <- which(!is.na(y))
+		weights <- 1/sds[nm]
+		equal.wts <- all(weights == weights[1])
+		#Fit using genlasso but use prediction tool from glmgen
+
+		if(equal.wts){
+			tfit.out <- genlasso:::trendfilter(y=y[nm], pos=pos[nm], ord=ord)
+		}else{
+			tfit.out <- genlasso:::trendfilter(y=y[nm]*weights, pos=pos[nm], X=diag(weights), ord=ord)
+		}
+
+    if(is.na(lambda) & !equal.wts){
+			cv <- cv.genlasso_glmgen(tfit.out, weights=weights, mode="glmgen")
+      l <- lambda <- cv$lambda.1se*sample.size
+      cat(lambda, "\n")
+		}else if(is.na(lambda) & equal.wts){
+			cv <- cv.genlasso_glmgen(tfit.out, weights=rep(1, p), mode="glmgen")
+      l <-  cv$lambda.1se*sample.size
+			lambda <- l*(weights[1])^2
+      cat(lambda, "\n")
+		}else if(equal.wts){
+			l <- lambda/(weights[1]^2)
+		}else{
+			l <- lambda
+		}
+		co <- coef.genlasso(tfit.out, lambda = l/sample.size, type="primal")$beta
+		if(any(is.na(y))){
+		  tfit.out$x <- tfit.out$pos
+		  tfit.out$k <- tfit.out$ord
+		  class(tfit.out) <- "glmgen"
+		  fit <- glmgen:::predict.trendfilter(tfit.out, type="link", lambda=l/sample.size, x.new=pos)
+		}else{
+		  fit <- co
+		}
+    return(list("fit"=fit, "lambda"=lambda))
+}
+
+
+#Fit JADE at gamma=0
+fit_gamma0 <- function(y, lambda, pos, sample.size, sds, ord){
+		p <- dim(y)[1]
+		K <- dim(y)[2]
+
+		stopifnot(length(sample.size)==K)
+		if(is.null(sds)) sds <- matrix(1, p, K)
+
+		if(is.null(lambda)){
+				lambda <- rep(NA, K)
+		}else{
+				stopifnot(length(lambda)==K)
+		}
+
+		fit <- matrix(0, p, K)
+		for(j in 1:K){
+				f <- fit_one(y[,j], lambda[j], pos, sds[,j], sample.size[j], ord=ord)
+				fit[,j] <- f$fit
+				if(is.na(lambda[j])){
+						lambda[j] <- f$lambda #Accomodating sample.size occurs in fit_one
+				}
+		}
+		return(list("fit"=fit, "lambda"=lambda))
+}
+
+#Fit JADE at gamma max
+fit_gammamax <- function(y, lambda, pos, sample.size, sds, ord){
+		p <- dim(y)[1]
+		K <- dim(y)[2]
+
+		stopifnot(length(sample.size)==K)
+		if(is.null(sds)) sds <- matrix(1, p, K)
+
+
+		missing <- is.na(y)
+
+		y[missing] <- 0
+		sds[missing] <- 0
+		ss <- matrix(rep(sample.size, p), byrow=TRUE, nrow=p)
+		z <- ss/(sds^2); z[missing] <- 0
+		new_sigma <- sqrt( 1/ rowSums(z) )
+		new_y <- (y*ss)/(sds^2); new_y[missing] <- 0
+		new_y <- rowSums(new_y)*(new_sigma^2)
+		if(is.null(lambda)){
+			new_lam <- NA
+		}else{
+				stopifnot(length(lambda)==K)
+				new_lam <- sum(lambda)
+		}
+
+		fit <- fit_one(new_y, new_lam, pos, new_sigma, 1, ord=ord)
+		if(is.null(lambda)){
+			l <- fit$lambda/sum(sample.size)
+			lambda <- sample.size * l
+		}
+
+		fit <- matrix(rep(fit$fit, K), byrow=FALSE, nrow=p)
+		return(list("fit"=fit, "lambda"=lambda))
+}
+
+#Default weights
+default_wts <- function(p, K){
+	wts <- list()
+  for(j in 1:(K-1)){
+    wts[[j]] <- list()
+    for(i in (j+1):K){
+      wts[[j]][[i-j]] <- rep(1, p)
+    }
+	}
+	return(wts)
+}
+
+pairwise_wts <- function(subset.wts, fit_var, sample.size){
+	K <- length(subset.wts)+1
+	pw <- list()
+	for(j in 1:(K-1)){
+		pw[[j]] <- list()
+		for(i in (j+1):K){
+			pw[[j]][[i-j]] <- subset.wts[[j]][[i-j]]*sqrt( fit_var[i] + fit_var[j])
+		}
+	}
+	return(pw)
+}
+
+get_AtA_diag <- function(y, sds){
+	K <- dim(y)[2]
+	p <- dim(y)[1]
+	AtA_diag <- matrix(0, p, K)
+	for(j in 1:K){
+		w <- rep(1, p)
+		w[is.na(y[,j])] <- 0
+		s <- sds[!is.na(y[,j]), j]
+		w[!is.na(y[,j])] <- w[!is.na(y[,j])]/(s^2)
+		AtA_diag[,j] <- w
+	}
+	return(AtA_diag)
+}
+
+get_AtAy <- function(y, sds){
+	p <- dim(y)[1]
+	K <- dim(y)[2]
+	AtAy <- matrix(0, p, K)
+	for(j in 1:K){
+		idx <- which(!is.na(y[,j]))
+		n.idx <- which(is.na(y[,j]))
+		w <- rep(1, p)
+    w[n.idx] <- 0
+    w[idx] <- w[idx]/(sds[idx,j]^2)
+		newy <- y[,j]
+		newy[n.idx] <- 0
+		AtAy[,j] <- newy*w
+	}
+	return(AtAy)
+}
+
+
+#Coppied from GWAS Tools
+getobj <- function (Rdata){
+    objname <- load(Rdata)
+    if (length(objname) > 1) {
+        warning(paste("Multiple objects stored in file", Rdata,
+            "\nReturning only the first object"))
+    }
+    return(get(objname))
+}
+
+get_sep <- function(fits, tol){
+	K <- dim(fits)[2]
+	p <- dim(fits)[1]
+	sep <- list()
+	for(j in 1:(K-1)){
+			sep[[j]] <- list()
+			for(i in (j+1):K){
+				u <- abs(fits[,i]- fits[,j])
+				sep[[j]][[i-j]] <- rep(0, p)
+				sep[[j]][[i-j]][u > tol] <- 1
+			}
+	}
+	return(sep)
+}
+
+fused_from_sep <- function(sep){
+	K <- length(sep)+1
+	fused <- list()
+	for(j in 1:(K-1)){
+      fused[[j]] <- list()
+      for(i in (j+1):K){
+        fused[[j]][[i-j]] <- 1-sep[[j]][[i-j]]
+      }
+  }
+  return(fused)
+}
+
+obj_fct_parts <-  function(fit.obj){
+
+		y <- fit.obj$y
+		fits <- fit.obj$fits
+		sds <- fit.obj$sds
+		pos <- fit.obj$pos
+		ord <- fit.obj$ord
+		p <- dim(y)[1]
+		K <- dim(y)[2]
+
+		alph_p <- dim(fit.obj$D)[1]
+		D1 <- getDtf(n=alph_p, ord=0)
+		D <- D1 %*% fit.obj$D
+
+		miss <- which(is.na(y))
+		sds[miss] <- Inf
+		ssd <- sum(((y-fits)/sds)^2, na.rm=TRUE)/2
+		tf_pen <- rep(0, K)
+		cl_pen <- 0
+		for(j in 1:K){
+			tf_pen[j] <- fit.obj$lambda[j]*sum(abs(D%*%fits[,j]))
+			if(j==K) next
+			for (i in (j+1):K){
+				cl_pen <- cl_pen + fit.obj$gamma*sum(abs(fits[,j]-fits[,i])*fit.obj$subset.wts[[j]][[i-j]]*(sqrt(fit.obj$fit_var[,i] + fit.obj$fit_var[,j])))
+			}
+		}
+		return(c(ssd, tf_pen, cl_pen))
+}
