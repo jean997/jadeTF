@@ -29,34 +29,35 @@ obj_fct <-  function(y, tfits, lambda, gamma, sample.size, subset.wts, fit_var, 
 }
 
 #Fit one sample
-#Missing points are imputed using utility from glmgen package even though fitting is done with genlasso package
+#Missing points are imputed
+#Minimize 1/(2*N) || y - \theta ||^2 + \lambda_1||D\theta||_1
+#Equivalent to 1/2 || y - \theta ||^2 + \lambda_1*N||D\theta||_1
 fit_one <- function(y, lambda, pos, sds, sample.size, ord){
     p <- length(y)
 		nm <- which(!is.na(y))
-		weights <- 1/sds[nm]
-		equal.wts <- all(weights == weights[1])
+		wts <- 1/sds[nm]
+		equal.wts <- all(wts == wts[1])
+		#If all the weights are equal solve
+		#Minimize 1/2 || y - \theta ||^2 + (\lambda_1*N)/w^2||D\theta||_1
 
 		if(equal.wts){
 			tfit.out <- genlasso:::trendfilter(y=y[nm], pos=pos[nm], ord=ord)
 		}else{
-			tfit.out <- genlasso:::trendfilter(y=y[nm]*weights, pos=pos[nm], X=diag(weights), ord=ord)
+		  tfit.out <- trendfilter_weights(y=y[nm], pos=pos[nm], wts=wts, ord=ord)
 		}
 
-    if(is.na(lambda) & !equal.wts){
-			cv <- cv.genlasso_glmgen(tfit.out, weights=weights, mode="glmgen")
-      l <- lambda <- cv$lambda.1se*sample.size
-      cat(lambda, "\n")
-		}else if(is.na(lambda) & equal.wts){
-			cv <- cv.genlasso_glmgen(tfit.out, weights=rep(1, p), mode="glmgen")
-      l <-  cv$lambda.1se*sample.size
-			lambda <- l*(weights[1])^2
+    if(is.na(lambda)){
+      cv <- cv_pred.genlasso(obj=tfit.out, n.folds = 5, mode = "predict")
+      l <- cv$lambda.1se
+      lambda <- l/sample.size
+      if(equal.wts) lambda <- lambda*(weights[1])^2
       cat(lambda, "\n")
 		}else if(equal.wts){
 			l <- lambda/(weights[1]^2)
 		}else{
-			l <- lambda
+			l <- lambda*sample.size
 		}
-		co <- coef.genlasso(tfit.out, lambda = l/sample.size, type="primal")$beta
+		co <- coef.genlasso(tfit.out, lambda = l, type="primal")$beta
 		if(any(is.na(y))){
 		  fit = .Call("tf_predict_R",
 		              sBeta = as.double(co),
@@ -159,6 +160,36 @@ pairwise_wts <- function(subset.wts, fit_var, sample.size){
 	return(pw)
 }
 
+soft_threshold <- function(vec,lam){
+  # Soft threshold function
+  #
+  # ARGUMENTS
+  #	vec	: vector that soft tresholding is applied
+  #	lam	: non-negative scalar soft tresholding parameter.
+  #
+  # VALUES
+  #	res	: resulting vector of the same size as vec
+  #
+  if ( length(lam)>1 &  length(lam)!=length(vec)){
+    cat(length(vec), " ", length(lam), "\n")
+    cat('\n ERROR: THE SIZE OF THE SECOND ARGUMENT SHOULD BE 1 or length of vec.\n')
+    return ( 0 )
+  }
+
+  idx.1<-which(vec < -lam)
+  idx.2<-which(vec > lam)
+  res<-rep(0,length(vec))
+
+  if(length(lam)==1){
+    if ( length(idx.1)>0 ) res[idx.1]<- vec[idx.1]+lam
+    if ( length(idx.2)>0 ) res[idx.2]<- vec[idx.2]-lam
+  }else{
+    if ( length(idx.1)>0 ) res[idx.1]<- vec[idx.1]+lam[idx.1]
+    if ( length(idx.2)>0 ) res[idx.2]<- vec[idx.2]-lam[idx.2]
+  }
+  return( res )
+}
+
 
 #Helper functions
 get_AtA_diag <- function(y, sds){
@@ -202,6 +233,11 @@ getobj <- function (Rdata){
     }
     return(get(objname))
 }
+
+
+
+
+
 
 get_sep <- function(fits, tol){
 	K <- dim(fits)[2]
