@@ -23,6 +23,12 @@ jade_admm <- function(y, gamma, pos=NULL, lambda=NULL, sample.size=NULL,
 	p <- dim(y)[1] #Number of sites
 	K <- dim(y)[2] #Number of groups
 
+	#Sample size
+	if(is.null(sample.size)){
+	  cat("Assuming equal sample sizes are all 1 as sample.size is not provided.\n")
+	  sample.size <- rep(1, K)
+	}
+
 	#Data Summary
 	if(verbose){
 	  cat("Groups:", K, "\n")
@@ -41,11 +47,7 @@ jade_admm <- function(y, gamma, pos=NULL, lambda=NULL, sample.size=NULL,
 		if(is.null(fit.var)) var.wts <- rep(1, p)
 		  else var.wts = sqrt(fit.var[,1] + fit.var[,2])
 	}
-	#Sample size
-	if(is.null(sample.size)){
-		cat("Assuming equal sample size as sample.size is not provided.\n")
-		sample.size <- rep(1, K)
-	}
+
 	stopifnot(length(sample.size)==K)
 	#Subset Weights
 	if(!is.null(subset.wts)){
@@ -68,9 +70,6 @@ jade_admm <- function(y, gamma, pos=NULL, lambda=NULL, sample.size=NULL,
 		pos<- scale.pos* ((pos-R[1])/(R[2]-R[1]))
 	}
 
-	#Default starting value for step size
-	if(is.null(rho.alpha)) rho.alpha <- lambda*(((max(pos)-min(pos))/p)^(ord-1))
-
 	###Choose initial fits, cv lambda if necessary
 
 	if(verbose) cat("Fitting at max value of gamma.\n")
@@ -79,7 +78,7 @@ jade_admm <- function(y, gamma, pos=NULL, lambda=NULL, sample.size=NULL,
 	if(is.null(lambda)) lambda <- theta.max$lambda
 	theta.max <- theta.max$fit
 
-	if(verbose) cat("Fitting at gamma=0")
+	if(verbose) cat("Fitting at gamma=0\n")
 	theta.min <- fit_gamma0(y=y,  lambda=lambda, pos=pos, sample.size=sample.size, sds=sds, ord=ord)
 	theta.min <- theta.min$fit
 	if(!is.null(theta0)){
@@ -98,6 +97,9 @@ jade_admm <- function(y, gamma, pos=NULL, lambda=NULL, sample.size=NULL,
 	  return(RETURN)
 	}
 
+	#Default starting value for step size - must be after lambda is chosen
+	if(is.null(rho.alpha)) rho.alpha <- lambda*(((max(pos)-min(pos))/p)^(ord-1))
+
   #Prepare for ADMM algorithm
   #Build \tilde{D}^{k, x}
   if(ord==0){
@@ -110,7 +112,7 @@ jade_admm <- function(y, gamma, pos=NULL, lambda=NULL, sample.size=NULL,
 	DtD <- crossprod(D)
 	alpha.size <- dim(D)[1]
 
-	AtA.diag <- get_AtA.diag(y, sds)
+	AtA.diag <- get_AtA_diag(y, sds)
 
 	AtAy <-  get_AtAy(y, sds)
 
@@ -190,7 +192,7 @@ jade_admm <- function(y, gamma, pos=NULL, lambda=NULL, sample.size=NULL,
 				  rho.alpha[j] <- rho.alpha[j]/tau.decr
           u.alpha[,j] <- u.alpha[,j]*tau.decr
           theta.upd.qr.list[[j]] <- 0
-          if(verbose) cat("new rho.alpha ",j, " ", rho.alpha[j], "\n")
+          if(verbose) cat("Changing rho.alpha ",j, " ", rho.alpha[j], "\n")
 			  }
 		  }
 		}

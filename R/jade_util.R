@@ -125,10 +125,10 @@ fit_gammamax <- function(y, lambda, pos, sample.size, sds, ord){
 				stopifnot(length(lambda)==K)
 				new.lam <- sum(lambda)
 		}
-    new.sample.size <- sum(sample.size)
-		fit <- fit_one(new.y, new.lam, pos, new.sigma, new.sample.size, ord)
+
+		fit <- fit_one(new.y, new.lam, pos, new.sigma, 1, ord)
 		if(is.null(lambda)){
-			l <- fit$lambda
+			l <- fit$lambda/sum(sample.size)
 			lambda <- sample.size * l
 		}
 
