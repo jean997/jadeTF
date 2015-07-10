@@ -30,18 +30,18 @@ obj_fct <-  function(y, tfits, lambda, gamma, sample.size, subset.wts, fit_var, 
 
 #Fit one sample
 #Missing points are imputed
-#Minimize 1/(2*N) || y - \theta ||^2 + \lambda_1||D\theta||_1
-#Equivalent to 1/2 || y - \theta ||^2 + \lambda_1*N||D\theta||_1
+#Minimize N/(2) || (y - \theta)/sds ||^2 + \lambda_1||D\theta||_1
+#Equivalent to 1/2 || w*(y - \theta) ||^2 + \lambda_1/N||D\theta||_1
 fit_one <- function(y, lambda, pos, sds, sample.size, ord){
     p <- length(y)
 		nm <- which(!is.na(y))
 		wts <- 1/sds[nm]
 		equal.wts <- all(wts == wts[1])
 		#If all the weights are equal solve
-		#Minimize 1/2 || y - \theta ||^2 + (\lambda_1*N)/w^2||D\theta||_1
+		#Minimize 1/2 || y - \theta ||^2 + (\lambda_1/(N*w^2)||D\theta||_1
 
 		if(equal.wts){
-			tfit.out <- genlasso:::trendfilter(y=y[nm], pos=pos[nm], ord=ord)
+			tfit.out <- genlasso::trendfilter(y=y[nm], pos=pos[nm], ord=ord)
 		}else{
 		  tfit.out <- trendfilter_weights(y=y[nm], pos=pos[nm], wts=wts, ord=ord)
 		}
@@ -49,13 +49,13 @@ fit_one <- function(y, lambda, pos, sds, sample.size, ord){
     if(is.na(lambda)){
       cv <- cv_pred.genlasso(obj=tfit.out, n.folds = 5, mode = "predict")
       l <- cv$lambda.1se
-      lambda <- l/sample.size
-      if(equal.wts) lambda <- lambda*(weights[1])^2
+      lambda <- l*sample.size
+      if(equal.wts) lambda <- lambda*(wts[1])^2
       cat(lambda, "\n")
 		}else if(equal.wts){
-			l <- lambda/(weights[1]^2)
+			l <- lambda/(sample.size*wts[1]^2)
 		}else{
-			l <- lambda*sample.size
+			l <- lambda/sample.size
 		}
 		co <- coef.genlasso(tfit.out, lambda = l, type="primal")$beta
 		if(any(is.na(y))){
@@ -95,7 +95,7 @@ fit_gamma0 <- function(y, lambda, pos, sample.size, sds, ord){
 				f <- fit_one(y[,j], lambda[j], pos, sds[,j], sample.size[j], ord=ord)
 				fit[,j] <- f$fit
 				if(is.na(lambda[j])){
-						lambda[j] <- f$lambda #Accomodating sample.size occurs in fit_one
+						lambda[j] <- f$lambda
 				}
 		}
 		return(list("fit"=fit, "lambda"=lambda))
@@ -110,25 +110,25 @@ fit_gammamax <- function(y, lambda, pos, sample.size, sds, ord){
 		if(is.null(sds)) sds <- matrix(1, p, K)
 
 
-		missing <- is.na(y)
+		miss <- is.na(y)
 
-		y[missing] <- 0
-		sds[missing] <- 0
+		y[miss] <- 0
+		sds[miss] <- 0
 		ss <- matrix(rep(sample.size, p), byrow=TRUE, nrow=p)
-		z <- ss/(sds^2); z[missing] <- 0
-		new_sigma <- sqrt( 1/ rowSums(z) )
-		new_y <- (y*ss)/(sds^2); new_y[missing] <- 0
-		new_y <- rowSums(new_y)*(new_sigma^2)
+		z <- ss/(sds^2); z[miss] <- 0
+		new.sigma <- sqrt( 1/ rowSums(z) )
+		new.y <- (y*ss)/(sds^2); new.y[miss] <- 0
+		new.y <- rowSums(new.y)*(new.sigma^2)
 		if(is.null(lambda)){
-			new_lam <- NA
+			new.lam <- NA
 		}else{
 				stopifnot(length(lambda)==K)
-				new_lam <- sum(lambda)
+				new.lam <- sum(lambda)
 		}
-
-		fit <- fit_one(new_y, new_lam, pos, new_sigma, 1, ord=ord)
+    new.sample.size <- sum(sample.size)
+		fit <- fit_one(new.y, new.lam, pos, new.sigma, new.sample.size, ord)
 		if(is.null(lambda)){
-			l <- fit$lambda/sum(sample.size)
+			l <- fit$lambda
 			lambda <- sample.size * l
 		}
 
