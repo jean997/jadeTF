@@ -60,7 +60,8 @@
 #' @export
 jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.size=NULL, ord=2,
                       sds=NULL, fit.var=NULL, var.wts=NULL, subset.wts=NULL,
-                      theta0=NULL, verbose=FALSE, tol=0.001, max.it=1000,
+                      theta0=NULL, u.alpha0 = NULL, u.beta0=NULL,
+                      verbose=FALSE, tol=0.001, max.it=1000,
                       rho.alpha=NULL, rho.beta=1, adjust.rho.alpha=FALSE,
                       tau.decr=2, tau.incr=2, mu=10, e.rel=1e-4, e.abs=1e-8){
 
@@ -138,11 +139,11 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
   }
 
   if(K==1 | gamma ==0){
-    RETURN <- list("fits"=theta.min, "fit,max"=theta.max,
+    RETURN <- list("fits"=theta.min, "fit.max"=theta.max,
                    "y"=y, "sample.size"=sample.size, "fit.var"=fit.var,
                    "sds"=sds, "pos"=pos.given, "scale.pos"=scale.pos,
                    "lambda"=lambda, "gamma"=gamma, "ord"=ord,
-                   "tol"=tol, "subset.wts"=subset.wts)
+                   "tol"=tol, "subset.wts"=subset.wts, algorithm="admm")
 
     return(RETURN)
   }
@@ -168,10 +169,12 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
 
   #Intitialize
   alpha <- D%*% theta
-  u.alpha <- -D%*%theta +alpha
+  if(is.null(u.alpha0)) u.alpha <- -D%*%theta +alpha
+    else u.alpha <- u.alpha0
 
   beta <- theta
-  u.beta <-  beta-theta
+  if(is.null(u.beta0)) u.beta <-  beta-theta
+    else u.beta <- u.beta0
 
   #Inverses for theta_update
   theta.upd.qr.list <- list()
@@ -275,13 +278,13 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
   }
   sep <- get_sep(beta, tol)
 
-  RETURN <- list("fits"=theta, "n"=iter,  "D"=D, "alpha"=alpha, "beta"=beta, "rho.alpha"=rho.alpha, "rho.beta"=rho.beta,
-                 "y"=y, "sample.size"=sample.size, "u.beta"=u.beta, "u.alpha"=u.alpha,
+  RETURN <- list("fits"=theta, "sep"=sep, "n"=iter,  "D"=D,
+                 "alpha"=alpha, "beta"=beta, "u.beta"=u.beta, "u.alpha"=u.alpha,
+                 "rho.alpha"=rho.alpha, "rho.beta"=rho.beta,
+                 "y"=y, "sample.size"=sample.size,
                  "sds"=sds, "fit.var"=fit.var, "pos"=pos.given, "scale.pos"=scale.pos,
-                 "lambda"=lambda, "gamma"=gamma, "ord"=ord, "sep"=sep, "tol"=tol,
-                 "subset.wts"=subset.wts, "converged"=converged)
-  #"t_theta"=t_theta, "t_beta"=t_beta, "t_alpha"=t_alpha, "t_ua"=t_ua, "t_ub"=t_ub)
-
+                 "lambda"=lambda, "gamma"=gamma, "ord"=ord, "tol"=tol,
+                 "subset.wts"=subset.wts, "converged"=converged, algorithm="admm")
   return(RETURN)
 }
 

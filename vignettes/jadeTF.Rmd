@@ -1,0 +1,71 @@
+---
+title: "Joint Adaptive Differential Estimation with trendfiltering"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Joint Adaptive Differential Estimation with trendfiltering}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This vignette walks through an analysis of some simulated data using JADE via the `jadeTF` package. For more details about the method see (reference to paper). In this example we compare the profiles of two groups.
+
+## Simulate Some Data
+
+There are a few sets of smooth profiles built into the package. These are matrices of size $300\times 2$ giving the mean value at each of 300 positions. For now we will assume the positions are equally spaced.
+```{r, fig.show='hold', fig.width=6, fig.height=3}
+library(jadeTF)
+library(ggplot2)
+data(profiles, package = "jadeTF")
+#plot(1:300, profiles[,1], type="l", xlab="Position", ylab="Profile")
+#lines(1:300, profiles[,2], col="blue")
+ggplot(data.frame(profiles), aes(x=1:300))+  geom_line(aes(y=X1)) + geom_line(aes(y=X2), color="blue") + labs(x="Position", y="Profile")
+```
+
+First we will simulate some data from these profiles. In one group we have three samples. In the other we have 5. JADE will only require the average value at each position. 
+```{r, echo=FALSE}
+set.seed(10000)
+#Make some data from each group
+y1 <- replicate(3, rnorm(300, profiles[,1]))
+y2 <- replicate(5, rnorm(300, profiles[,2]))
+y <- cbind(rowMeans(y1), rowMeans(y2))
+```
+
+## Fit the data at $\gamma = 0$
+
+JADE will choose the smoothing parameters using cross validation if they aren't provided
+```{r, eval=FALSE}
+fit0 <- jade_admm(y, gamma=0, ord=2, sample.size = c(3, 5))
+## 1 ..2 ..3 ..4 ..5 ..   <-------- Output from running (5-fold) cross validation
+## 587.8658 
+```
+```{r, fig.show="hold", fig.width=6, fig.height=3}
+df <- data.frame(y, fit0$fits); 
+names(df)=c("Y1", "Y2", "F1", "F2")
+ggplot(df, aes(x=1:300))+  
+  geom_line(aes(y=F1)) + 
+  geom_line(aes(y=F2), color="blue") + labs(x="Position", y="Estimated Profile")
+```
+
+## Fit JADE for one particular value of $\gamma$
+Here we've chosen a nice intermediate value of $\gamma$. In other applications, at this point you would have no way of knowing what an interesting value of $\gamma$ might be.
+```{r, eval=FALSE}
+fit1 <- jade_admm(y, gamma=1, ord=2, sample.size = c(3, 5), lambda=fit0$lambda)
+```
+
+## Run a path of values of $\gamma$
+
+Two choices:
+
+* `path_planned`
+* `path_guess`
+
+## Choose $\gamma$ by cross validation
+Here we use $k$-fold cross validation to select a value of $\gamma$. Like the main analysis we will do this in two steps for each fold. 
+
+1. Fit the data missing a particular fold at $\gamma=0$. In this step unique values of $\lambda$ are chosen for each fold via cross validation and the variance of the fit can be estimated by bootstrapping. 
+1. Run a path for each fold. After all the fitting we will be able to find the value of $\gamma$ which minimizes the cross validation error.
+Dividing the analysis in this way allows for parallelization in several places.
+
+### Step 1 - Fit at $\gamma = 0$ for cross validation runs
+

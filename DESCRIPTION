@@ -12,3 +12,5 @@ Imports:
   Matrix,
     Rcpp
 LinkingTo: Rcpp
+Suggests: knitr
+VignetteBuilder: knitr
