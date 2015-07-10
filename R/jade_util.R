@@ -240,8 +240,9 @@ getobj <- function (Rdata){
 #' @param fits A p x K matrix of fits. To recalculate separation
 #' for a \code{jade_admm} object use \code{fits=obj$beta}.
 #' @param tol Tolerance for determining separation
-#' @return A list length p vectors of 0s and 1s.
-#' The vector stored in \code{out[[i]][[j-i]]} indicates the separation between group i and group j.
+#' @return A list of lists of length p vectors containing 0s and 1s.
+#' The vector stored in \code{[[i]][[j-i]]} indicates the separation between group i and group j.
+#' @export
 get_sep <- function(fits, tol){
 	K <- dim(fits)[2]
 	p <- dim(fits)[1]

@@ -13,8 +13,8 @@ for a \code{jade_admm} object use \code{fits=obj$beta}.}
 \item{tol}{Tolerance for determining separation}
 }
 \value{
-A list length p vectors of 0s and 1s.
-The vector stored in \code{out[[i]][[j-i]]} indicates the separation between group i and group j.
+A list of lists of length p vectors containing 0s and 1s.
+The vector stored in \code{[[i]][[j-i]]} indicates the separation between group i and group j.
 }
 \description{
 Determine which pairs of sites are fused.

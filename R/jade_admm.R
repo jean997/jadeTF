@@ -57,6 +57,7 @@
 #'   \item{\code{sep}}{List of lists giving separation. See \code{\link{get_sep}}}
 #' }
 #' As well as all of the original parameters.
+#' @export
 jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.size=NULL, ord=2,
                       sds=NULL, fit.var=NULL, var.wts=NULL, subset.wts=NULL,
                       theta0=NULL, verbose=FALSE, tol=0.001, max.it=1000,

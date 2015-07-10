@@ -20,7 +20,8 @@ trendfilter_weights(y, pos, wts = NULL, ord = 0, approx = FALSE,
 \item{...}{See \code{\link[genlasso]{trendfilter}} for other options.}
 }
 \value{
-Returns a \code{genlasso} object with additional elements \code{weights} with the weights provided.
+Returns a \code{genlasso} object with additional elements \code{weights}
+with the weights provided.
 }
 \description{
 This function minimizes
