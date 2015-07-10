@@ -1,7 +1,8 @@
 #' @useDynLib jadeTF
 #' @importFrom Rcpp sourceCpp
 #' @import  genlasso
-
+#' @import  clusterpathRcpp
+#' @import  Matrix
 
 #Contains small utility functions
 
@@ -235,10 +236,12 @@ getobj <- function (Rdata){
 }
 
 
-
-
-
-
+#' Determine which pairs of sites are fused.
+#' @param fits A p x K matrix of fits. To recalculate separation
+#' for a \code{jade_admm} object use \code{fits=obj$beta}.
+#' @param tol Tolerance for determining separation
+#' @return A list length p vectors of 0s and 1s.
+#' The vector stored in \code{out[[i]][[j-i]]} indicates the separation between group i and group j.
 get_sep <- function(fits, tol){
 	K <- dim(fits)[2]
 	p <- dim(fits)[1]

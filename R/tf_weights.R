@@ -7,7 +7,21 @@
 #1/2 || w*y - X \theta ||^2 + \lambda_1||D\theta||_1 where X = diag(w)
   #Equivalent to minimizing 1/2 || w*y - \theta* ||^2 + \lambda_1||D*\theta||_1
   #Where D* = D %*% diag(1/w) - see trendfiltering paper and genlasso code.
-
+#' Solve trendfiltering problem with weights.
+#' @description This function minimizes
+#' \deqn{\frac{1}{2} \Vert w*(y - \theta) \Vert^{2}_{2} + \lambda\Vert D\theta\Vert_{1}}{
+#' 1/2 || w(y - \theta) ||^2 + \lambda_||D\theta||_1}
+#' Where D is a trendfiltering pendalty matrix.
+#' This function borrows code heavily from the \code{genlasso} package and
+#' also returns a \code{genlasso} object.
+#'
+#' @param y Vector of data.
+#' @param pos Vector of positions.
+#' @param wts Vector of weights
+#' @param ord Order of polynomial to fit.
+#' @param ... See \code{\link[genlasso]{trendfilter}} for other options.
+#'
+#' @return Returns a \code{genlasso} object with additional elements \code{weights} with the weights provided.
 trendfilter_weights <- function(y, pos, wts=NULL, ord=0, approx=FALSE, maxsteps=2000,
                              minlam=0, rtol=1e-7, btol=1e-7, eps=1e-4, verbose=FALSE) {
 
