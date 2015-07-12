@@ -1,0 +1,137 @@
+
+plot_data <- function(counts, reads, pos, ylim=c(0, 1), range=NULL){
+  if(!is.matrix(counts)){
+				K=1
+				p <- length(counts)
+				counts <- matrix(counts, nrow=p)
+				reads <- matrix(reads, nrow=p)
+  }else{
+		p <- dim(counts)[1]
+		K <- dim(counts)[2]
+  }
+	cat(p, K, "\n")
+  if(K==1) sv <- TRUE
+  else sv <- FALSE
+
+	cols=c("black", "red3", "blue2")
+	if(K >3) cols <- c(cols, 4:(K-3))
+
+	if(is.null(range)){
+		range <- range(pos)
+		idx <- 1:p
+	}else{
+		idx <- which(pos <= max(range) & pos >= min(range))
+		pos <- pos[idx]
+		cat(dim(fits), "\n")
+	}
+	p <- length(pos)
+  data.full <- (counts/reads)[idx,]
+
+	df <- data.frame(pos, data.full, reads)
+  names(df) <- c("pos", paste("y", 1:K, sep=""), paste("r", 1:K, sep=""))
+	h <- ggplot(df)
+  for(j in 1:K){
+			h <- h + geom_point(aes_string(x="pos", y=paste("y", j, sep=""), size=paste("r", j, sep="")), col=cols[j], alpha=1)
+  }
+  return(h + scale_size_area() + ylim(ylim)+ theme(legend.position="none",
+                                                   axis.title.x=element_blank(),
+                                                   axis.title.y=element_blank(),
+                                                   text=element_text(size=20)))
+
+
+}
+
+plot_multi <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
+                       range=NULL, wsize=10, maxcov=Inf, take.log.cov=FALSE,
+                       maxwidth=3, minwidth=0.5,  ylim=NULL, sep.tab=NULL){
+
+  if(!is.null(y)) plot.data=TRUE
+	  else plot.data=FALSE
+
+	if(class(fits)=="numeric"){
+			p <- length(fits)
+			K <- 1
+			cat("Single variable.\n")
+			if(!is.null(y)) y <- matrix(y, nrow=p)
+			if(!is.null(reads)) reads <- matrix(reads, nrow=p)
+			alpha <- 0.8
+			sv<- TRUE
+	}else{
+		p <- dim(fits)[1]
+		K <- dim(fits)[2]
+		sv <- FALSE
+		alpha <- 0.6
+	}
+	cat(p, K, "\n")
+
+	if(is.null(cols)){
+	  cols=c("black", "red3", "blue2")
+	  if(K >3) cols <- c(cols, 4:(K-3))
+	}
+
+
+	if(is.null(range)){
+		range <- range(pos)
+		idx <- 1:p
+	}else{
+		idx <- which(pos <= max(range) & pos >= min(range))
+		fits <- fits[idx,, drop=FALSE]
+		pos <- pos[idx]
+		cat(dim(fits), "\n")
+	}
+	p <- length(pos)
+
+	if(!is.null(y)) data.full <- y[idx,, drop=FALSE]
+	   else data.full <- matrix(NA, nrow=p, ncol=K)
+
+  if(!is.null(reads)) reads.full <- reads[idx,, drop=FALSE]
+	  else reads.full <- matrix(1, nrow=p, ncol=K)
+
+	if(is.null(ylim) & !plot.data) ylim=range(fits)
+	  else if(is.null(ylim)) ylim=range(cbind(data.full, fits))
+
+	window.coverage <- matrix(NA, nrow=p, ncol=K)
+	for(i in 1:p){
+		t <- pos[i]
+		if(sum(pos >= t-(wsize/2) & pos <= t+(wsize/2)) ==1){
+			 C <- reads.full[i, ]
+		}else{
+			C <- apply(reads.full[ pos >= t-(wsize/2) & pos <= t+(wsize/2),,drop=FALSE] , MARGIN=2, FUN=sum)
+		}
+		window.coverage[i, ] <- C
+	}
+	window.coverage[window.coverage > maxcov] <- maxcov
+	window.coverage <- window.coverage + 2
+	if(take.log.cov){
+		window.coverage=log10(window.coverage)
+		window.coverage[window.coverage== -Inf] <- 0
+	}
+	cat("Got Coverage\n")
+
+	df <- data.frame(pos, fits, window.coverage, data.full, reads.full)
+  names(df) <- c("pos", paste("t", 1:K, sep=""), paste("w", 1:K, sep=""), paste("y", 1:K, sep=""), paste("r", 1:K, sep=""))
+	h <- ggplot(df)
+
+	#Background colors
+	if(!is.null(sep.tab)){
+	  m.lower <- sep.tab$Start
+		m.upper <- sep.tab$Stop
+		M <- data.frame(m.lower, m.upper)
+		names(M) <- c("m.lower", "m.upper")
+
+		h <- h + geom_rect(data=M, aes(xmin=m.lower,xmax=m.upper,ymin=-Inf,ymax=Inf),
+		                   fill="blue", alpha=0.2)
+	}
+	if(plot.data){
+		for(j in 1:K){
+			h <- h + geom_point(aes_string(x="pos", y=paste("y", j, sep="")), col=cols[j], alpha=0.7, size=1.5)
+		}
+	}
+	for(j in 1:K){
+		h <- h +  geom_line(aes_string(x="pos", y=paste("t", j, sep=""), size=paste("w", j, sep="")), col=cols[j], alpha=alpha)
+	}
+	R <- h + scale_size(range=c(minwidth, maxwidth)) + scale_x_continuous(minor_breaks=pos) +
+	  ylim(ylim) + theme(legend.position="none", axis.title.x=element_blank(),
+	                     axis.title.y=element_blank(), text=element_text(size=20))
+	return(R)
+}

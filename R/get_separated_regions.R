@@ -54,8 +54,8 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
     res.tab.sep$Ncpg <- width(z.sep$ranges)
 
     for(i in 1:nrow(z.sep)){
-      f <- fit$fits[start(z.merge)[i]:end(z.merge)[i],]
-      p <- fit$pos[start(z.merge)[i]:end(z.merge)[i]]
+      f <- fit$fits[start(z.sep)[i]:end(z.sep)[i],]
+      p <- fit$pos[start(z.sep)[i]:end(z.sep)[i]]
 
       if(!is.null(data.range)){
         f <- pmin(f, max(data.range))
@@ -79,10 +79,17 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
     res.tab.merge$Width <- res.tab.merge$Stop - res.tab.merge$Start
     res.tab.merge$Ncpg <- width(z.merge$ranges)
     for(i in 1:nrow(z.merge)){
+      f <- fit$fits[start(z.merge)[i]:end(z.merge)[i],]
+      p <- fit$pos[start(z.merge)[i]:end(z.merge)[i]]
+
+      if(!is.null(data.range)){
+        f <- pmin(f, max(data.range))
+        f <- pmax(f, min(data.range))
+      }
       for(j in 1:(K-1)){
         for(l in (j+1):K){
           g <- f[,j]-f[,l]
-          res.tab.sep[i, paste("AvgGap", j, l, sep="")] <- sum(diff(p)*rollmean(abs(g),2))/(max(p)-min(p))
+          res.tab.merge[i, paste("AvgGap", j, l, sep="")] <- sum(diff(p)*rollmean(abs(g),2))/(max(p)-min(p))
         }
       }
     }

@@ -1,3 +1,4 @@
+#Utility functions for dealing with partitions
 
 sep_to_partition <- function(sep, K){
 	if(all(sep==0)){
@@ -13,7 +14,7 @@ sep_to_partition <- function(sep, K){
 	pairs <- matrix(nrow=0, ncol=2)
 	for(i in 1:length(sep)){
 		if(sep[i]==0) pairs <- rbind(pairs, idx_to_pair(i, K))
-	}	
+	}
 
 	groups <- list(c(1))
 	for(i in 1:nrow(pairs)){
@@ -43,7 +44,7 @@ sep_to_partition <- function(sep, K){
 	}
 	return(partition)
 }
-	
+
 
 partition_to_sep <- function(partition, K){
 	grps <-unlist(strsplit(partition, split="[()]"))
