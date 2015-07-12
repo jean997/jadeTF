@@ -1,17 +1,58 @@
 #Functions used for fitting JADE at a series of gammas based on a fit with gamma=0
-
-
 #Run the full path sequentially
 #This is now preferred as of Dec. 2014
 #Modified to try to choose better range
-jade_path <- function(fit0.file, n.fits, out.file, log.gamma.min=-3, start.step=0.03, tol=1e-5, mean=NULL, max_it=10000, log.gamma.max=20, max.iter=NULL, buffer=0.01, temp.file=NULL, restart.file=NULL){
 
-		if(is.null(temp.file)){
-				z <- unlist(strsplit(out.file, ".RData"))[1]
-				temp.file <- paste(z, "_temp.RData", sep="")
-		}
+#' Fit JADE at a sequence of gamma values without knowing much about where to start.
+#' @description This function requires having previously fit the data at \code{gamma}=0. JADE will be fit
+#' at a serries of \code{gamma} values The function tries to fit JADE at a series of \code{gamma}
+#' values so that fits occur at evenly spaced values of \code{l1.total}.
+#'
+#' @param fit0 Either a jade object or a file containing a jade object produced by fitting with \code{gamma=0}
+#' @param out.file Name of a file to save the results to.
+#' @param n.fits Desired number of fits along the path. Actual results may vary.
+#' @param temp.file Name a temp file. If missing will use a default based on \code{out.file}.
+#' This file will be deleted at the end.
+#' @param max.it Maximum number of jade iterations.
+#' @param max.fits Maximum number of fits.
+#' @param log.gamma.minlog.gamma.max Smallest and largest values of \code{gamma} that are allowed.
+#' @param restart.file Provide if restarting from a temporary file.
+#' @param hard.stop Stop at \code{log.gamma.stop} regardless of if the path is done or not.
+#'
+#' @return The output of this function is both returned and saved to a file. Partial results
+#' are saved to a temporary file along the way. The path objects is a list with several components:
+#' \describe{
+#'  \item{\code{gammas}} A list of length n of gamma values at which JADE was fit. The first element
+#'  is always zero.
+#'   \item{\code{JADE_fits}}{A list of n JADE objects in the same order as \code{gammas}.}
+#'   \item{\code{l1.total}}{Vector of length n giving the total L1 distance between pairs of profiles at each value of \code{gamma}}
+#'   \item{\code{sep.total}}{Vector of length n giving the total number of separated sites between all pairs of profiles}
+#'   \item{\code{sep}}{List of lists of matrices giving the pairwise separation
+#'   between profiles. sep[[i]][[j-i]] is a \eqn{p \times n} matrix which describes the
+#'   separation between profiles for group i and group j.}
+#'   \item{\code{tol}}{The tolerance at which the seaparation in \code{sep.total} and \code{sep}
+#'   were calculated}
+#' }
+#' @export
+jade_path_guess <- function(fit0, n.fits, out.file, temp.file=NULL,
+                            max.it=10000, log.gamma.min=-3, log.gamma.max=20,
+                            start.step=0.03, tol=1e-3, max.fits= 10*n.fits,
+                            buffer=0.01, restart.file=NULL, verbose=TRUE){
+
+	if(is.null(temp.file)){
+    z <- unlist(strsplit(out.file, ".RData"))[1]
+    temp.file <- paste(z, "_temp.RData", sep="")
+	}
+
+
+  if(class(fit0)=="character"){
+    fit0.file <- fit0
+    fit0 <- getobj(fit0.file)
+  }
+
+  sep0 <- get_sep(fit0$fits, tol)
+
 	#Set up for fits
-	fit0 <- getobj(fit0.file)
 	log.gammas <- c(-Inf, log.gamma.min)
 
 	p <- dim(fit0$y)[1]
@@ -20,7 +61,7 @@ jade_path <- function(fit0.file, n.fits, out.file, log.gamma.min=-3, start.step=
 	sep.total0 <- 0
 	for(j in 1:(K-1)){
     for(l in (j+1):K){
-			sep.total0 <- sep.total0 + sum(abs(fit0$fits[,j]-fit0$fits[,l]) > tol)
+			sep.total0 <- sep.total0 + sum(sep0[[j]][[l-j]])
 			l1.total0 <- l1.total0 + sum(abs(fit0$fits[,j] - fit0$fits[,l]))
 		}
 	}
@@ -28,7 +69,7 @@ jade_path <- function(fit0.file, n.fits, out.file, log.gamma.min=-3, start.step=
 
 	l1.gap <- l1.total0/n.fits
 	#cat("Gap: ", l1.gap, "\n")
-	if(is.null(max.iter)) max.iter <- n.fits*10
+
 	#l1.maxgap <- 2*l1.gap
 
 	#Structures for path
@@ -47,27 +88,55 @@ jade_path <- function(fit0.file, n.fits, out.file, log.gamma.min=-3, start.step=
 
 	i <- 2
 
-	theta_init=fit0$fits
+	theta0=fit0$fits
+	u.alpha0=NULL
+	u.beta0=NULL
 	done <- FALSE
 
+	#Restarting from a temp file
 	if(!is.null(restart.file)){
 			path.temp <- getobj(restart.file)
-			i <- length(path.temp$gammas)
+			i <- length(path.temp$JADE_fits)+1
 			log.gammas <- log10(path.temp$gammas)
 			sep <- path.temp$sep
 			l1.total <- path.temp$l1.total
 			tol <- path.temp$tol
 			fits <- path.temp$JADE_fits
 			sep.total <- path.temp$sep.total
-			new.gamma <- log.gammas[-1]
+      converged <- path.temp$converged
+      if(length(log.gammas)==i){
+        new.gamma <- log.gammas[i]
+        log.gammas <- log.gammas[-i]
+      }else{
+			  #Find next gamma value
+			  l1.top <- min(l1.total[sep.total >= sep.total0])
+			  l1.gap <- l1.top/n.fits
+			  lg.top <- max(log.gammas[sep.total >= sep.total0])
+			  keep.fits <- which(l1.total <= l1.total0 & is.finite(log.gammas))
+			  new.gamma <- find_new_gamma(l1.total=l1.total[keep.fits], sep.total=sep.total[keep.fits],
+			                            log.gammas=log.gammas[keep.fits], start.step=start.step,
+			                            l1.gap=l1.gap, l1.top=l1.top,
+			                            tol=tol, buffer=buffer, lg.top = lg.top)
+      }
 			closest.idx <- which.min(abs(log.gammas[-1]-new.gamma))+1
-			cat("Theta init idx ", closest.idx, "\n")
-			theta_init <- fits[[closest.idx]]$fits
+			#cat("Theta init idx ", closest.idx, "\n")
+			theta0 <- fits[[closest.idx]]$fits
+			u.alpha0 <- fits[[closest.idx]]$u.alpha
+			u.beta0 <- fits[[closest.idx]]$u.beta
+			log.gammas <- c(log.gammas, min(new.gamma, log.gamma.max))
 	}
+
 	while(!done){
 		g <- 10^log.gammas[i]
-		cat("Gamma", g, "\n")
-		fit <- jade_multi_tf_admm(y=fit0$y, gamma=g, lambda=fit0$lambda, sample.size=fit0$sample.size, sds=fit0$sds, ord=fit0$ord, positions=fit0$pos, scale.pos=fit0$scale.pos, theta_init=theta_init, fit_var=fit0$fit_var, max_it=max_it, tol=tol)
+		#cat("Gamma", g, "\n")
+		if(fit0$algorithm=="admm"){
+		  fit <- jade_admm(y=fit0$y, gamma=g, pos=fit0$pos, scale.pos=fit0$scale.pos,
+		                   lambda=fit0$lambda, sample.size=fit0$sample.size, ord=fit0$ord,
+		                   sds=fit0$sds, fit.var=fit0$fit.var,
+		                   theta0=theta0, u.alpha0=u.alpha0, u.beta0=u.beta0,
+		                   tol=tol,  max.it=max.it)
+		}
+
 		fits[[i]] <- fit
 
 		#Path elements: separation matrix, converged, l1.total, raw fits
@@ -81,142 +150,56 @@ jade_path <- function(fit0.file, n.fits, out.file, log.gamma.min=-3, start.step=
 				l1.total[i] <- l1.total[i] + sum(abs(fit$fits[,j] - fit$fits[,l]))
 			}
 		}
-		cat(i, "log.gamma: ", log.gammas[i], "n rep: ", fit$n, " converged: ", fit$converged, " sep.total: ", sep.total[i], " l1.total: ", l1.total[i], "\n")
+		if(verbose) cat(i, "log.gamma: ", log.gammas[i], "n rep: ", fit$n,
+		                " converged: ", fit$converged, " sep.total: ", sep.total[i],
+		                " l1.total: ", l1.total[i], "\n")
 		converged[i] <- fit$converged
 
 
 		#Update the gap size
+		#We don't care about the density of the path when sep.total >= sep.total0.
+		#l1.top is the smallest value of l1.total achieved while the profiles are
+		#still as separated as they are with no penalty.
+		#We want a dense path between l1.top and 0
 		l1.top <- min(l1.total[sep.total >= sep.total0])
 		l1.gap <- l1.top/n.fits
 		lg.top <- max(log.gammas[sep.total >= sep.total0])
-		#l1.maxgap <- 2*l1.gap
 
+		#Find the next gamma to evaluate
+		keep.fits <- which(l1.total <= l1.total0 & is.finite(log.gammas))
+		new.gamma <- find_new_gamma(l1.total=l1.total[keep.fits], sep.total=sep.total[keep.fits],
+		                            log.gammas=log.gammas[keep.fits], start.step=start.step,
+		                            l1.gap=l1.gap, l1.top=l1.top,
+		                            tol=tol, buffer=buffer, lg.top = lg.top)
 
-		#Try to find the next gamma to evaluate
-		if(i >=6){
-			#j <- order(c(l1.total[l1.total <= l1.top], 0), decreasing=TRUE)
-			#lt <- c(l1.total[l1.total <= l1.top], 0)[j]
-			lt <- sort(c(l1.total[ l1.total <= l1.top], 0), decreasing=TRUE)
-
-			#If we are still at the top somewhere
-			if(l1.top == min(l1.total)){
-				cat("Top!\n")
-				l1.target <- min(l1.total) - l1.gap
-				new.gamma <- find_new_gamma_tf(l1.target=l1.target, lg.top=lg.top, l1.total=l1.total[-1], log.gammas=log.gammas[-1], l1.gap=l1.gap, buffer=buffer)
-				if(new.gamma$warn){
-					cat("Hmmm. Check what is happening\n")
-					new.gamma$new.gamma <- max(log.gammas) + buffer
-				}
-				new.gamma <- new.gamma$new.gamma
-			}else if(all(-1*diff(lt) <= (l1.gap*2)) | i >= max.iter){
-				cat("Bottom?\n")
-				#If the path is dense enough
-				#And we got close to the bottom
-				if( min(l1.total) < (tol*p) | min(sep.total)==0 | max(log.gammas) ==log.gamma.max | i >= max.iter){
-					done <- TRUE
-					cat("finishing\n")
-					if(i==max.iter) cat("Warning: Path may not be complete!\n")
-					break
-				}else{
-					#If the path is dense but we didn't get close to the bottom
-					l1.target <- (min(l1.total)-0)/2
-					new.gamma <- find_new_gamma_tf(l1.target=l1.target, lg.top=lg.top, l1.total=l1.total[-1], log.gammas=log.gammas[-1], l1.gap=l1.gap, buffer=buffer)
-					#if(is.na(new.gamma)) new.gamma <- max(log.gammas)+1
-					new.gamma <- new.gamma$new.gamma
-				}
-			}else{
-				cat("Middle\n")
-				#If we are in the middle but the path isn't dense enough
-				hole.idx <- which(-1*diff(lt) > l1.gap)
-				l1.target <- lt[hole.idx]-l1.gap
-				new.gamma <- find_new_gamma_tf(l1.target=l1.target, lg.top=lg.top, l1.total=l1.total[-1], log.gammas=log.gammas[-1], l1.gap=l1.gap, buffer=buffer)
-				if(new.gamma$warn & (min(l1.total) < (tol*p) | min(sep.total) == 0)){
-						done <- TRUE
-						cat("finishing\n")
-						cat("Warning: Path may have holes!\n")
-						break
-				}
-				new.gamma <- new.gamma$new.gamma
-			}
-		}else{
-			#if i==2,3,4
-			new.gamma <- log.gammas[i] + start.step
-			if((l1.total0 - l1.total[i])  > l1.gap | sep.total[i] < sep.total0){
-				cat("Warning: May desire to start path earlier\n")
-				sep.total0 <- sep.total[i]
-			}
+		if(is.na(new.gamma) | max(log.gammas) ==log.gamma.max | i >= max.fits){
+		  if(verbose) cat("Finishing\n")
+		  done <- TRUE
+		  break
 		}
+
+		#Find the fit with the closest gamma to the next value.
+		#Use solutions from this fit as new theta0 value.
 		closest.idx <- which.min(abs(log.gammas[-1]-new.gamma))+1
-		cat("Theta init idx ", closest.idx, "\n")
-		theta_init <- fits[[closest.idx]]$fits
+		#cat("Theta init idx ", closest.idx, "\n")
+		theta0 <- fits[[closest.idx]]$fits
+		u.alpha0 <- fits[[closest.idx]]$u.alpha
+		u.beta0 <- fits[[closest.idx]]$u.beta
 
 		log.gammas <- c(log.gammas, min(new.gamma, log.gamma.max))
 		i <- i+1
-		cat("Next: ", log.gammas[i], " ")
-		path.temp <- list("JADE_fits"=fits, "sep"=sep, "l1.total" = l1.total, "sep.total"=sep.total, "gammas"=10^(log.gammas), "tol"=tol)
+		#cat("Next: ", log.gammas[i], " ")
+		path.temp <- list("JADE_fits"=fits, "sep"=sep, "l1.total" = l1.total, "converged"=converged,
+		                  "sep.total"=sep.total, "gammas"=10^(log.gammas), "tol"=tol)
 		save(path.temp, file=temp.file)
 	}
 
-	bic <- lapply(fits[-1], FUN=jade_bic, tol_beta=tol)
-	bic <- matrix(unlist(bic), nrow=length(fits)-1, byrow=TRUE)
-	path <- list("JADE_fits"=fits, "sep"=sep, "l1.total" = l1.total, "sep.total"=sep.total, "gammas"=10^(log.gammas), "bic"=bic[,1], "df"=bic[,2], "tol"=tol)
-
-	if(!is.null(mean)){
-		path$SSES <- unlist(lapply(path$JADE_fits, FUN=jade_sse, mean=mean))
-		path$WT_SSES <- unlist(lapply(path$JADE_fits, FUN=jade_wtd_sse, mean=mean))
-	}
+	path <- list("JADE_fits"=fits, "sep"=sep, "l1.total" = l1.total, "converged"=converged,
+		             #"bic"=bic[,1], "df"=bic[,2],
+		             "sep.total"=sep.total, "gammas"=10^(log.gammas), "tol"=tol)
 
 	cat("Done!\n")
-		unlink(temp.file)
 	save(path, file=out.file)
-}
-
-find_new_gamma_tf <- function(l1.target, lg.top, l1.total, log.gammas, buffer, l1.gap){
-
-	j <- length(l1.target)
-
-	y=l1.total[order(log.gammas)]
-	x=sort(log.gammas)
-	if(length(x) < 15) ord <- 1
-		else ord <- 2
-	if(length(x) < 25) k <- 3
-		else k <- 5
-
-	cat(length(x), ord, k, "\n")
-	#cat(y, "\n", x, "\n")
-	x.new <- seq(-18, 20, by=(buffer/2))
-	sm <- genlasso:::trendfilter(pos=x, y=y, ord=ord)
-	sm.cv <- cv.trendfilter(sm, k=k)
-	z <- coef.genlasso(sm, lambda=sm.cv$lambda.1s)
-	zz = .Call("tf_predict_R",
-                    sBeta = as.double(z$beta),
-                    sX = as.double(x),
-                    sN = length(y),
-                    sK = as.integer(ord),
-                    sX0 = as.double(x.new),
-                    sN0 = length(x.new),
-                    sNLambda = 1,
-                    sFamily = 0,
-                    sZeroTol = as.double(1e-6),
-                    package = "glmgen")
-	#lines(x.new, zz)
-	new.gamma <- NA
-	i <- 1
-	warn <- FALSE
-	while(is.na(new.gamma) & i <=j){
-		new.gamma <- x.new[ which.min(abs(zz-l1.target[i]))]
-		cat(new.gamma, " ")
-		new.gamma <- sort(c(lg.top-(2*buffer), new.gamma, lg.top+1))[2]
-		ng <- new.gamma
-		cat(new.gamma, " ")
-		#Don't repeat a gamma we have already tried
-		while(min(abs(log.gammas-new.gamma)) <= buffer) new.gamma <- new.gamma+(buffer/2)
-		cat(new.gamma, "\n")
-		if(abs(new.gamma-ng) > 15*buffer){
-			if(i < j) new.gamma <- NA
-			else warn <- TRUE
-		}
-		i <- i+1
-	}
-	return(list("new.gamma"=new.gamma, "warn"=warn))
+	unlink(temp.file)
+  return(path)
 }

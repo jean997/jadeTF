@@ -2,7 +2,7 @@
 % Please edit documentation in R/cv_fit0.R
 \name{cv_fit0}
 \alias{cv_fit0}
-\title{Run cross validation for JADE}
+\title{Run initial cross validation fits for JADE}
 \usage{
 cv_fit0(orig.fit, n.folds = 5, which.fold = 1:n.folds, data.file = NULL,
   n.rep.bs.var = NULL, save.prefix = NULL, return.objects = TRUE,

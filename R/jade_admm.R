@@ -33,8 +33,9 @@
 #' It should be a list of lists of the same format as the output of \code{\link{get_sep}}.
 #' Elements are vectors of length p of 0s and 1s with 0 indicating
 #' that the pair of points should not be penalized.
-#' @param theta0 Starting value for \eqn{\theta}. If a solution has been found for a nearby value
-#' of \eqn{\gamma} using this fit as \code{theta0} can improve convergence time greatly.
+#' @param theta0,u.alpha0,u.beta0 Starting values for \eqn{\theta} and the dual variables.
+#'If a solution has been found for a nearby value
+#' of \eqn{\gamma} using these values can improve convergence time.
 #' If not provided the solution at \eqn{\gamma = 0} is used.
 #' @param verbose Be chattier.
 #' @param tol Tolerance for declaring points separated.

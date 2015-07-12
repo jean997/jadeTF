@@ -1,5 +1,3 @@
-#Run the full path sequentially
-#This is now preferred by Jean as of Dec. 2014
 #Uses estimated start and stop points: log.gamma.start, log.gamma.stop. These should be good estimates
 #Rather than checking l1.gap we will just move from start to stop in even steps
 #Hard stop means go all the way to log.gamma.stop and don't go past even if path isn't done
@@ -38,6 +36,21 @@
 #' @param log.gamma.max Absolute largest value of \code{gamma} that will be fit.
 #' @param restart.file Provide if restarting from a temporary file.
 #' @param hard.stop Stop at \code{log.gamma.stop} regardless of if the path is done or not.
+#'
+#' @return The output of this function is both returned and saved to a file. Partial results
+#' are saved to a temporary file along the way. The path objects is a list with several components:
+#' \describe{
+#'  \item{\code{gammas}} A list of length n of gamma values at which JADE was fit. The first element
+#'  is always zero.
+#'   \item{\code{JADE_fits}}{A list of n JADE objects in the same order as \code{gammas}.}
+#'   \item{\code{l1.total}}{Vector of length n giving the total L1 distance between pairs of profiles at each value of \code{gamma}}
+#'   \item{\code{sep.total}}{Vector of length n giving the total number of separated sites between all pairs of profiles}
+#'   \item{\code{sep}}{List of lists of matrices giving the pairwise separation
+#'   between profiles. sep[[i]][[j-i]] is a \eqn{p \times n} matrix which describes the
+#'   separation between profiles for group i and group j.}
+#'   \item{\code{tol}}{The tolerance at which the seaparation in \code{sep.total} and \code{sep}
+#'   were calculated}
+#' }
 #' @export
 jade_path_planned <- function(fit0, out.file, log.gamma.start,
                               n.fits=NULL, log.gamma.stop=NULL, step.size=NULL,
@@ -147,7 +160,7 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
 			if((log.gammas[i] - log.gamma.start) < 2*step.size & sep.total[i] < (0.95*sep.total0)){
 			  #Near the top - check if we started too far in:
 			  new.gamma <- min(log.gammas[-1])-step.size
-			}else if(sep.total[i] == 0 | l1.total[i] < (tol*p/2) | log.gammas[i] >= log.gamma.max){
+			}else if(sep.total[i] == 0 | l1.total[i] < tol | log.gammas[i] >= log.gamma.max){
 			  #Time to stop
 			  done <- TRUE
 		  	new.gamma <- max(log.gammas[-1]) + step.size
@@ -170,7 +183,8 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
 
 		log.gammas <- c(log.gammas, new.gamma)
 		i <- i+1
-		path.temp <- list("JADE_fits"=fits, "sep"=sep, "l1.total" = l1.total, "sep.total"=sep.total, "gammas"=10^(log.gammas), "tol"=tol)
+		path.temp <- list("JADE_fits"=fits, "sep"=sep, "l1.total" = l1.total, "converged"=converged,
+		                  "sep.total"=sep.total, "gammas"=10^(log.gammas), "tol"=tol)
 		save(path.temp, file=temp.file)
 		#cat("Next: ", log.gammas[i], " ")
 	}
@@ -179,13 +193,14 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
 	#bic <- matrix(unlist(bic), nrow=length(fits)-1, byrow=TRUE)
 
 	log.gammas <- log.gammas[ -(length(log.gammas))]
-	path <- list("JADE_fits"=fits, "sep"=sep,
+	path <- list("JADE_fits"=fits, "sep"=sep, "converged"=converged,
 	             "l1.total" = l1.total, "sep.total"=sep.total,
 	             #"bic"=bic[,1], "df"=bic[,2],
 	             "gammas"=10^(log.gammas), "tol"=tol)
 	if(verbose) cat("Done!\n")
 	save(path, file=out.file)
 	unlink(temp.file)
+	return(path)
 }
 
 

@@ -3,31 +3,11 @@
 #' @import  genlasso
 #' @import  clusterpathRcpp
 #' @import  Matrix
+#' @import zoo
+#' @import plotrix
+#' @import IRanges
 
 #Contains small utility functions
-
-h <- function(x, p, pos, ord){
-	D_tf <- getDtfPosSparse(n=p, ord=ord, pos=pos)
-	return(sum(abs ( D_tf %*% x)))
-}
-
-#JADE Objective function for trend filtering problem
-obj_fct <-  function(y, tfits, lambda, gamma, sample.size, subset.wts, fit_var, pos, ord){
-
-		p <- dim(y)[1]
-		K <- dim(y)[2]
-
-		obj_value <- 0
-		for(j in 1:K){
-			obj_value <- obj_value + (sample.size[j]/2)*sum((y[,j]-tfits[,j])^2) + lambda[j]*h(tfits[,j], p, pos, ord)
-			if(j==K) next
-			for (i in (j+1):K){
-				pen <- gamma*sum(abs(tfits[,j]-tfits[,i])*subset.wts[[j]][[i-j]]*(sqrt(fit_var[,i] + fit_var[,j])))
-				obj_value <- obj_value + pen
-			}
-		}
-		return(obj_value)
-}
 
 #Fit one sample
 #Missing points are imputed
@@ -258,6 +238,34 @@ get_sep <- function(fits, tol){
 	return(sep)
 }
 
+pair_to_idx <- function(i, j, K){
+  if(i==j) stop("i == j given to pair_to_idx")
+  my.i <- min(i, j)
+  my.j <- max(i, j)
+
+  idx <- 1
+  first <- 1
+  while(my.i > first){
+    idx <- idx + (K-first)
+    first <- first + 1
+  }
+  idx <- idx + (my.j - my.i)-1
+  return(idx)
+}
+
+idx_to_pair <- function(idx, K){
+  my.i <- 1
+  my.idx <- idx
+  while(my.idx > 0){
+    my.i <- my.i + 1
+    my.idx <- my.idx - (K-my.i)-1
+  }
+  my.j <- my.idx + (K-my.i) +1 + (my.i -1)
+  my.i <- my.i -1
+  return(c(my.i, my.j))
+}
+
+
 fused_from_sep <- function(sep){
 	K <- length(sep)+1
 	fused <- list()
@@ -270,31 +278,28 @@ fused_from_sep <- function(sep){
   return(fused)
 }
 
-obj_fct_parts <-  function(fit.obj){
 
-		y <- fit.obj$y
-		fits <- fit.obj$fits
-		sds <- fit.obj$sds
-		pos <- fit.obj$pos
-		ord <- fit.obj$ord
-		p <- dim(y)[1]
-		K <- dim(y)[2]
+#Objective
 
-		alph_p <- dim(fit.obj$D)[1]
-		D1 <- getDtf(n=alph_p, ord=0)
-		D <- D1 %*% fit.obj$D
+h <- function(x, p, pos, ord){
+  D_tf <- getDtfPosSparse(n=p, ord=ord, pos=pos)
+  return(sum(abs ( D_tf %*% x)))
+}
 
-		miss <- which(is.na(y))
-		sds[miss] <- Inf
-		ssd <- sum(((y-fits)/sds)^2, na.rm=TRUE)/2
-		tf_pen <- rep(0, K)
-		cl_pen <- 0
-		for(j in 1:K){
-			tf_pen[j] <- fit.obj$lambda[j]*sum(abs(D%*%fits[,j]))
-			if(j==K) next
-			for (i in (j+1):K){
-				cl_pen <- cl_pen + fit.obj$gamma*sum(abs(fits[,j]-fits[,i])*fit.obj$subset.wts[[j]][[i-j]]*(sqrt(fit.obj$fit_var[,i] + fit.obj$fit_var[,j])))
-			}
-		}
-		return(c(ssd, tf_pen, cl_pen))
+#JADE Objective function for trend filtering problem
+obj_fct <-  function(y, tfits, lambda, gamma, sample.size, subset.wts, fit_var, pos, ord){
+
+  p <- dim(y)[1]
+  K <- dim(y)[2]
+
+  obj_value <- 0
+  for(j in 1:K){
+    obj_value <- obj_value + (sample.size[j]/2)*sum((y[,j]-tfits[,j])^2) + lambda[j]*h(tfits[,j], p, pos, ord)
+    if(j==K) next
+    for (i in (j+1):K){
+      pen <- gamma*sum(abs(tfits[,j]-tfits[,i])*subset.wts[[j]][[i-j]]*(sqrt(fit_var[,i] + fit_var[,j])))
+      obj_value <- obj_value + pen
+    }
+  }
+  return(obj_value)
 }

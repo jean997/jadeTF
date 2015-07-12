@@ -35,6 +35,22 @@ This file will be deleted at the end.}
 
 \item{hard.stop}{Stop at \code{log.gamma.stop} regardless of if the path is done or not.}
 }
+\value{
+The output of this function is both returned and saved to a file. Partial results
+are saved to a temporary file along the way. The path objects is a list with several components:
+\describe{
+ \item{\code{gammas}} A list of length n of gamma values at which JADE was fit. The first element
+ is always zero.
+  \item{\code{JADE_fits}}{A list of n JADE objects in the same order as \code{gammas}.}
+  \item{\code{l1.total}}{Vector of length n giving the total L1 distance between pairs of profiles at each value of \code{gamma}}
+  \item{\code{sep.total}}{Vector of length n giving the total number of separated sites between all pairs of profiles}
+  \item{\code{sep}}{List of lists of matrices giving the pairwise separation
+  between profiles. sep[[i]][[j-i]] is a \eqn{p \times n} matrix which describes the
+  separation between profiles for group i and group j.}
+  \item{\code{tol}}{The tolerance at which the seaparation in \code{sep.total} and \code{sep}
+  were calculated}
+}
+}
 \description{
 This function requires having previously fit the data at \code{gamma}=0. JADE will be fit
 at a serries of \code{gamma} values evenly spaced on the log scale. The spacing is determined by

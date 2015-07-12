@@ -6,10 +6,10 @@
 \usage{
 jade_admm(y, gamma, pos = NULL, scale.pos = NULL, lambda = NULL,
   sample.size = NULL, ord = 2, sds = NULL, fit.var = NULL,
-  var.wts = NULL, subset.wts = NULL, theta0 = NULL, verbose = FALSE,
-  tol = 0.001, max.it = 1000, rho.alpha = NULL, rho.beta = 1,
-  adjust.rho.alpha = FALSE, tau.decr = 2, tau.incr = 2, mu = 10,
-  e.rel = 1e-04, e.abs = 1e-08)
+  var.wts = NULL, subset.wts = NULL, theta0 = NULL, u.alpha0 = NULL,
+  u.beta0 = NULL, verbose = FALSE, tol = 0.001, max.it = 1000,
+  rho.alpha = NULL, rho.beta = 1, adjust.rho.alpha = FALSE,
+  tau.decr = 2, tau.incr = 2, mu = 10, e.rel = 1e-04, e.abs = 1e-08)
 }
 \arguments{
 \item{y}{Data matrix of size p x K. May contain NA values but may not contain rows which are all NA.}
@@ -48,8 +48,9 @@ It should be a list of lists of the same format as the output of \code{\link{get
 Elements are vectors of length p of 0s and 1s with 0 indicating
 that the pair of points should not be penalized.}
 
-\item{theta0}{Starting value for \eqn{\theta}. If a solution has been found for a nearby value
-of \eqn{\gamma} using this fit as \code{theta0} can improve convergence time greatly.
+\item{theta0,u.alpha0,u.beta0}{Starting values for \eqn{\theta} and the dual variables.
+If a solution has been found for a nearby value
+of \eqn{\gamma} using these values can improve convergence time.
 If not provided the solution at \eqn{\gamma = 0} is used.}
 
 \item{verbose}{Be chattier.}
