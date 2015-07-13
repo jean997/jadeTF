@@ -3,8 +3,12 @@
 #' @param fit A JADE fit.
 #' @param which.window,chr Will be put in the table. Can be useful for writing other files.
 #' @param new.tol Recalculate separation using a different tolerance.
-#' @return A table of separated regions. Returns 0 if all profiles are fused or only
+#' @return A list of two tables of separated regions.
+#' One of the tables is merged over partition types, the other is not.
+#' Returns 0 if all profiles are fused or only. These tables ca be passed
+#' to the \code{\link{plot_jade}} function in \code{sep.tab} argument.
 #' separated at singleton sites.
+#' @export
 get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL, data.range=NULL){
   K <- dim(fit$fits)[2]
   #stopifnot(K==3)

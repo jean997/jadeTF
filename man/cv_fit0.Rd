@@ -36,6 +36,6 @@ A single jade object or list of jade objects of the same type as
 \description{
 Use an existing JADE fit at \eqn{\gamma = 0} to start cross validation fits with the same parameters.
 These can be used as start computation of a series of solutions for \eqn{\gamma} between 0 and \eqn{\gamma_{max}}{\gamma_max}
-using either \code{\link{jade_path_plan}} or \code{\link{jade_path_guess}}.
+using either \code{\link{jade_path_plan}} or \code{\link{jade_path}}.
 }
 

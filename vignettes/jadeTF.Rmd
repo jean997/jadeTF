@@ -8,26 +8,37 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-This vignette walks through an analysis of some simulated data using JADE via the `jadeTF` package. For more details about the method see (reference to paper). In this example we compare the profiles of two groups.
+This vignette walks through an analysis of some simulated data using JADE via the `jadeTF` package. For more details about the method see (reference to paper). In this example we compare the profiles of two groups. Running JADE and cross validating the tuning parameters can be computationally burdensome so the functions in this package are designed to allow opportunities to parallelize tasks. The basic outline of a JADE analysis is
+
+1. Fit JADE at `gamma=0`. The smoothing parameters f $\lambda$ will be chosen via cross validation if they aren't provided.
+1. (Optional and only available for the two group case) Estimate the variance of the fits using cross validation. These values are used to construct the $W$ matrix.
+1. Fit JADE at a sequence of `gamma` values.
+1. Repeat the above steps on cross validation data sets in which some data has been removed. Use these fits to select a value of `gamma`.
+1. Obtain a list of separated regions from the selected JADE fit. Plot the results.
+
 
 ## Simulate Some Data
 
-There are a few sets of smooth profiles built into the package. These are matrices of size $300\times 2$ giving the mean value at each of 300 positions. For now we will assume the positions are equally spaced.
-```{r, fig.show='hold', fig.width=6, fig.height=3}
+There are a few sets of smooth profiles built into the package. `prof_1` is a matrix containing mean values at 100 evenly spaced positions.
+```{r, results='hide'}
 library(jadeTF)
 library(ggplot2)
-data(profiles, package = "jadeTF")
-#plot(1:300, profiles[,1], type="l", xlab="Position", ylab="Profile")
-#lines(1:300, profiles[,2], col="blue")
-ggplot(data.frame(profiles), aes(x=1:300))+  geom_line(aes(y=X1)) + geom_line(aes(y=X2), color="blue") + labs(x="Position", y="Profile")
+library(IRanges)
+```
+```{r, fig.show='hold', fig.width=6, fig.height=3, echo=FALSE}
+data(prof_1, package = "jadeTF")
+ggplot(data.frame(prof_1), aes(x=1:300)) +
+  geom_line(aes(y=X1)) + 
+  geom_line(aes(y=X2), color="blue") + 
+  labs(x="Position", y="Profile")
 ```
 
-First we will simulate some data from these profiles. In one group we have three samples. In the other we have 5. JADE will only require the average value at each position. 
-```{r, echo=FALSE}
+First we will simulate some data from these profiles. In one group we have 10 samples, in the other we have 15. JADE will only require the average value at each position. 
+```{r, results='hide'}
 set.seed(10000)
 #Make some data from each group
-y1 <- replicate(3, rnorm(300, profiles[,1]))
-y2 <- replicate(5, rnorm(300, profiles[,2]))
+y1 <- replicate(10, rnorm(100, prof_1[,1], 0.5))
+y2 <- replicate(15, rnorm(100, prof_1[,2], 0.5))
 y <- cbind(rowMeans(y1), rowMeans(y2))
 ```
 
@@ -35,37 +46,75 @@ y <- cbind(rowMeans(y1), rowMeans(y2))
 
 JADE will choose the smoothing parameters using cross validation if they aren't provided
 ```{r, eval=FALSE}
-fit0 <- jade_admm(y, gamma=0, ord=2, sample.size = c(3, 5))
+fit0 <- jade_admm(y, gamma=0, ord=2, sample.size = c(10, 15))
 ## 1 ..2 ..3 ..4 ..5 ..   <-------- Output from running (5-fold) cross validation
-## 587.8658 
+## 205.1597    
 ```
+Plot the results to see smooth curves with no fusion:
 ```{r, fig.show="hold", fig.width=6, fig.height=3}
+data(fit0, package = "jadeTF")
 df <- data.frame(y, fit0$fits); 
 names(df)=c("Y1", "Y2", "F1", "F2")
-ggplot(df, aes(x=1:300))+  
+ggplot(df, aes(x=1:100))+  
   geom_line(aes(y=F1)) + 
   geom_line(aes(y=F2), color="blue") + labs(x="Position", y="Estimated Profile")
 ```
 
 ## Fit JADE for one particular value of $\gamma$
-Here we've chosen a nice intermediate value of $\gamma$. In other applications, at this point you would have no way of knowing what an interesting value of $\gamma$ might be.
+Here we've chosen an intermediate value of $\gamma$ which results in some fused and some separated regions. Usually at this point you would have no way of knowing what an interesting value of $\gamma$ might be.
 ```{r, eval=FALSE}
-fit1 <- jade_admm(y, gamma=1, ord=2, sample.size = c(3, 5), lambda=fit0$lambda)
+fit1 <- jade_admm(y, gamma=1, ord=2, sample.size = c(10, 15), lambda=fit0$lambda)
+```
+The `jade_admm` function is the workhorse of the `jadeTF` package and executes the ADMM algorithm described in (reference to paper). The parameters `theta0`, `u.alpha0` and `u.beta0` can be used to start the ADMM algorithm off at the solution for a nearby value of `gamma`. This ''warm start'' techinique can reduce the number of iterations to reach convergence and will be used when we run a sequence of fits using the `jade_path_planned` or `jade_path` functions.
+
+The function `get_separated_regions` can be used to produce a table listing regions with separation. The function provides two tables - one merged over partition types and one with partition types separated. In the case of $K=2$ these tables are thes same. The tables automatically include a "Chrom" and "Window" collumn which can be useful for large problems that are broken into many windows. The tables can also be written out to text files as .bed files.
+```{r}
+res.tab <- get_separated_regions(fit = fit1)
+res.tab$separated
+```
+The results table can be passed to the plotting funciton `plot_jade` to illustrate the separated regions (in blue) and the estimated fits.
+```{r, , fig.show="hold", fig.width=6, fig.height=3}
+plot_jade(fits = fit1$fits, pos = 1:100, y = y, maxwidth = 0.5, sep.tab = res.tab$separated)
 ```
 
 ## Run a path of values of $\gamma$
+In most cases we don't just want the solution for a single value of `gamma`. We want a series of solutions for increasing values of `gamma` from very small to the point when all the profiles are fused. There are two functions which can be used to do this
 
-Two choices:
+* `jade_path_planned`
+* `jade_path`
 
-* `path_planned`
-* `path_guess`
+Both are initiated with a fit at `gamma=0`. `jade_path_planned` will run a series of fits from a specified starting point and increasing by a given step size on the log scale until the path is finished. It might be difficult to know where to start or what step size to use. `path_guess` doesn't require this information and will try to fit a specified number of fits which are which have approximately evenly spaced values of $\sum_{i=1}^{K}\Vert \theta_{i}\Vert_{1}$. This can be faster or slower than `jade_path_planned` and is a more consistent way to guarantee a desired density of fits along the path. It is especially useful if you are fitting many windows and don't want to individually tinker around with each one to try to find good starting places.
+
+Running a full path can take a while. Partial paths are saved to temp files that can be specified and the full path is always saved to an output file as well as returned.
+```{r, eval=FALSE}
+path <- jade_path(fit0 = fit0, n.fits = 100, out.file = "example_path.RData")
+```
 
 ## Choose $\gamma$ by cross validation
-Here we use $k$-fold cross validation to select a value of $\gamma$. Like the main analysis we will do this in two steps for each fold. 
+Here we use $k$-fold cross validation to select a value of $\gamma$. This involves repeating the previous steps on data sets with some values set to missing. Predictions at the missing values will be used to calculate the cross validation error and select a value of $\gamma$
 
-1. Fit the data missing a particular fold at $\gamma=0$. In this step unique values of $\lambda$ are chosen for each fold via cross validation and the variance of the fit can be estimated by bootstrapping. 
-1. Run a path for each fold. After all the fitting we will be able to find the value of $\gamma$ which minimizes the cross validation error.
-Dividing the analysis in this way allows for parallelization in several places.
 
-### Step 1 - Fit at $\gamma = 0$ for cross validation runs
+### Fit at $\gamma = 0$ for data with missing folds.
+TThee `cv_fit0` function uses a previous fit on the entire data at `gamma=0` and performs an analogus fit on the same data set with missing values introduced. To fit the first fold when we are planning on five fold cross validaiont we would use
+```{r, eval=FALSE}
+fit0.1 <- cv_fit0(orig.fit=fit0, n.folds=5, which.fold=1)
+```
+To fit all the folds sequentially `which.fold` could be set to `1:5` but if multiple processors are available these can be run simultaneously.
 
+### Fit paths for each fold
+For only the first fold we would run 
+```{r, eval=FALSE}
+path.1 <- jade_path_guess(fit0 = fit0.1, n.fits = 100, out.file = "example_path.1.RData")
+```
+
+## Collect all the cross validation runs and choose a value of $\gamma$.
+The function `cv_err` computes the cross validation error and determines the fit in the original path with the lowest cross validation error and 1 standard error rule cross validation error.
+```{r, eval=FALSE}
+cv.path.list <- paste("example_path.", 1:5, ".RData", sep="")
+cv <- cv_err(orig.path=path, cv.path.list=cv.path.list)
+```
+
+## When $K=2$, improve fits by including the estimated variance of the smoothed profiles.
+
+```{r}
+```

@@ -15,7 +15,10 @@ get_separated_regions(fit, which.window = 1, chr = "chr22",
 \item{new.tol}{Recalculate separation using a different tolerance.}
 }
 \value{
-A table of separated regions. Returns 0 if all profiles are fused or only
+A list of two tables of separated regions.
+One of the tables is merged over partition types, the other is not.
+Returns 0 if all profiles are fused or only. These tables ca be passed
+to the \code{\link{plot_jade}} function in \code{sep.tab} argument.
 separated at singleton sites.
 }
 \description{
