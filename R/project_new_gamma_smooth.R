@@ -1,4 +1,4 @@
-#Helper function for jade_path_guess
+#Helper function for jade_path
 #Function for finding the next gamma value give
 #l1.target List of desired values of l1.total at the next fit
 #lg.top

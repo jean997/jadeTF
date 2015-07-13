@@ -37,11 +37,21 @@ plot_data <- function(counts, reads, pos, ylim=c(0, 1), range=NULL){
                                                    axis.title.x=element_blank(),
                                                    axis.title.y=element_blank(),
                                                    text=element_text(size=20)))
-
-
 }
 
-plot_multi <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
+#' Plot a JADE fit
+#' @param fits A p by K matrix of fitted values (the \code{fits}) element of a JADE fit object.
+#' @param pos Vector of positions.
+#' @param y A p by K matrix of data. Optional. If provided, data points will be added to the plot.
+#' Data can be plotted by itself using the \code{plot_data} function.
+#' @param reads A p by K matrix of read counts or an indication of the relative amount of data for
+#' each element of \code{y}. Line widths will be proportional to \code{reads}.
+#' @param wsize Window size used to determine line widths.
+#' @param sep.tab A table giving regions which are separated.
+#' This can be obtained using \code{\link{get_separated_regions}}.
+#' @return A \code{ggplot} object for the desred plot.
+#' @export
+plot_jade <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
                        range=NULL, wsize=10, maxcov=Inf, take.log.cov=FALSE,
                        maxwidth=3, minwidth=0.5,  ylim=NULL, sep.tab=NULL){
 
@@ -62,7 +72,6 @@ plot_multi <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
 		sv <- FALSE
 		alpha <- 0.6
 	}
-	cat(p, K, "\n")
 
 	if(is.null(cols)){
 	  cols=c("black", "red3", "blue2")
@@ -106,7 +115,7 @@ plot_multi <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
 		window.coverage=log10(window.coverage)
 		window.coverage[window.coverage== -Inf] <- 0
 	}
-	cat("Got Coverage\n")
+
 
 	df <- data.frame(pos, fits, window.coverage, data.full, reads.full)
   names(df) <- c("pos", paste("t", 1:K, sep=""), paste("w", 1:K, sep=""), paste("y", 1:K, sep=""), paste("r", 1:K, sep=""))

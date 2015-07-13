@@ -2,7 +2,7 @@
 #' @importFrom Rcpp sourceCpp
 #' @import  genlasso
 #' @import  clusterpathRcpp
-#' @import  Matrix
+#' @import Matrix
 #' @import zoo
 #' @import plotrix
 #' @import IRanges
@@ -278,6 +278,21 @@ fused_from_sep <- function(sep){
   return(fused)
 }
 
+plot_separation <- function(path.obj, sites, hline=NULL, main="", log=TRUE, ylim=NULL){
+  K <- length(path.obj$sep)+1
+  y =log10(path.obj$gammas[-1])
+  k <- length(y)
+  p <- length(sites)
+  if(is.null(ylim)) ylim <- range(y)
+  idx <- order(y, decreasing = FALSE)
+  for(i in 1:(K-1)){
+    for(j in (i+1):K){
+      sep <- path.obj$sep[[i]][[j-i]]
+      image(x=sites, y=y[idx], z=sep[, idx], col=c("white", "blue"), main=main, ylim=ylim)
+      if(!is.null(hline)) abline(h=hline, col="red")
+    }
+  }
+}
 
 #Objective
 
