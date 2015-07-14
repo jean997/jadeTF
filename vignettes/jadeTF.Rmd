@@ -20,14 +20,14 @@ This vignette walks through an analysis of some simulated data using JADE via th
 ## Simulate Some Data
 
 There are a few sets of smooth profiles built into the package. `prof_1` is a matrix containing mean values at 100 evenly spaced positions.
-```{r, results='hide'}
+```{r, results='hide', message=FALSE, warning=FALSE}
 library(jadeTF)
 library(ggplot2)
 library(IRanges)
 ```
 ```{r, fig.show='hold', fig.width=6, fig.height=3, echo=FALSE}
 data(prof_1, package = "jadeTF")
-ggplot(data.frame(prof_1), aes(x=1:300)) +
+ggplot(data.frame(prof_1), aes(x=1:100)) +
   geom_line(aes(y=X1)) + 
   geom_line(aes(y=X2), color="blue") + 
   labs(x="Position", y="Profile")
@@ -85,11 +85,16 @@ In most cases we don't just want the solution for a single value of `gamma`. We 
 
 Both are initiated with a fit at `gamma=0`. `jade_path_planned` will run a series of fits from a specified starting point and increasing by a given step size on the log scale until the path is finished. It might be difficult to know where to start or what step size to use. `path_guess` doesn't require this information and will try to fit a specified number of fits which are which have approximately evenly spaced values of $\sum_{i=1}^{K}\Vert \theta_{i}\Vert_{1}$. This can be faster or slower than `jade_path_planned` and is a more consistent way to guarantee a desired density of fits along the path. It is especially useful if you are fitting many windows and don't want to individually tinker around with each one to try to find good starting places.
 
-Running a full path can take a while. Partial paths are saved to temp files that can be specified and the full path is always saved to an output file as well as returned.
+Running a full path can take a while. Partial paths are saved to temp files that can be specified and the full path is always saved to an output file as well as returned. The code below takes about 110 minutes on a standard laptop. 
 ```{r, eval=FALSE}
 path <- jade_path(fit0 = fit0, n.fits = 100, out.file = "example_path.RData")
 ```
-
+The function `jade_path` doesn't require any knowledge about what the critical values of `gamma` at which the curves are totally fused at the high end or just begin to fuse at the low end. In its current implementation `jade_path` can be slow and fit many more than the desired number of fits - for example the above code results in 222 fits rahter than 100. There is an alternate function `jade_path_planned` which requres inputting a starting and approximate stopping point but can be faster if the points provided are good guesses. The code below only takes 30 minutes and fits 102 fits but has the advantage of knowing where to start and stop.
+```{r, eval=FALSE}
+path.planned <- jade_path_planned(fit0 = fit0, 
+                                  log.gamma.start = -1, log.gamma.stop= 0.1, 
+                                  n.fits = 100, out.file = "example_path_planned.RData")
+```
 ## Choose $\gamma$ by cross validation
 Here we use $k$-fold cross validation to select a value of $\gamma$. This involves repeating the previous steps on data sets with some values set to missing. Predictions at the missing values will be used to calculate the cross validation error and select a value of $\gamma$
 
@@ -104,7 +109,7 @@ To fit all the folds sequentially `which.fold` could be set to `1:5` but if mult
 ### Fit paths for each fold
 For only the first fold we would run 
 ```{r, eval=FALSE}
-path.1 <- jade_path_guess(fit0 = fit0.1, n.fits = 100, out.file = "example_path.1.RData")
+path.1 <- jade_path(fit0 = fit0.1, n.fits = 100, out.file = "example_path.1.RData")
 ```
 
 ## Collect all the cross validation runs and choose a value of $\gamma$.

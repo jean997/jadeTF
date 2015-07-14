@@ -73,9 +73,9 @@ cv_fit0 <- function(orig.fit, n.folds=5, which.fold=1:n.folds, data.file=NULL,
 		  for(j in 1:K){
 			  stp <- stp + orig.fit$sample.size[j]
 			  if(is.null(R$READS)){
-				  my.var <- bs_var(R$Y[, strt:stp], lambda=fit0$lambda[j], sample.size=orig.fit$sample.size[j], positions=orig.fit$pos, scale.pos=orig.fit$scale.pos, ord=orig.fit$ord, n.rep=n.rep.bs.var, sds=orig.fit$sds[,j])
+				  my.var <- bs_var_tf(R$Y[, strt:stp], lambda=fit0$lambda[j], sample.size=orig.fit$sample.size[j], positions=orig.fit$pos, scale.pos=orig.fit$scale.pos, ord=orig.fit$ord, n.rep=n.rep.bs.var, sds=orig.fit$sds[,j])
 			  }else{
-				  my.var <- bs_var(R$Y[, strt:stp], lambda=fit0$lambda[j], sample.size=orig.fit$sample.size[j], positions=orig.fit$pos, scale.pos=orig.fit$scale.pos, ord=orig.fit$ord, n.rep=n.rep.bs.var, READS=R$READS[, strt:stp], sds=orig.fit$sds[,j])
+				  my.var <- bs_var_tf(R$Y[, strt:stp], lambda=fit0$lambda[j], sample.size=orig.fit$sample.size[j], positions=orig.fit$pos, scale.pos=orig.fit$scale.pos, ord=orig.fit$ord, n.rep=n.rep.bs.var, READS=R$READS[, strt:stp], sds=orig.fit$sds[,j])
 			  }
 			  fit.var[,j] <- my.var$var
 			  strt <- strt + orig.fit$sample.size[j]
