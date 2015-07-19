@@ -31,7 +31,8 @@ plot_data <- function(counts, reads, pos, ylim=c(0, 1), range=NULL){
   names(df) <- c("pos", paste("y", 1:K, sep=""), paste("r", 1:K, sep=""))
 	h <- ggplot(df)
   for(j in 1:K){
-			h <- h + geom_point(aes_string(x="pos", y=paste("y", j, sep=""), size=paste("r", j, sep="")), col=cols[j], alpha=1)
+			h <- h + geom_point(aes_string(x="pos", y=paste("y", j, sep=""),
+			                               size=paste("r", j, sep="")), col=cols[j], alpha=1)
   }
   return(h + scale_size_area() + ylim(ylim)+ theme(legend.position="none",
                                                    axis.title.x=element_blank(),
@@ -131,16 +132,23 @@ plot_jade <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
 		h <- h + geom_rect(data=M, aes(xmin=m.lower,xmax=m.upper,ymin=-Inf,ymax=Inf),
 		                   fill="blue", alpha=0.2)
 	}
-	if(plot.data){
-		for(j in 1:K){
-			h <- h + geom_point(aes_string(x="pos", y=paste("y", j, sep="")), col=cols[j], alpha=0.7, size=1.5)
-		}
-	}
+
 	for(j in 1:K){
-		h <- h +  geom_line(aes_string(x="pos", y=paste("t", j, sep=""), size=paste("w", j, sep="")), col=cols[j], alpha=alpha)
+		h <- h +  geom_line(aes_string(x="pos", y=paste("t", j, sep=""), size=paste("w", j, sep="")),
+		                    col=cols[j], alpha=alpha)
 	}
-	R <- h + scale_size(range=c(minwidth, maxwidth)) + scale_x_continuous(minor_breaks=pos) +
-	  ylim(ylim) + theme(legend.position="none", axis.title.x=element_blank(),
-	                     axis.title.y=element_blank(), text=element_text(size=20))
+
+	if(plot.data){
+	  for(j in 1:K){
+	    h <- h + geom_point(aes_string(x="pos", y=paste("y", j, sep="")),
+	                        col=cols[j], size=2, shape=1)
+	  }
+	}
+	R <- h + scale_x_continuous(minor_breaks=pos) +
+	  ylim(ylim) + theme(legend.position="none",
+	                     #axis.title.x=element_blank(),
+	                     axis.title.y=element_blank(),
+	                     text=element_text(size=20)) +
+	  scale_size(range=c(minwidth, maxwidth)) + labs(x="Position")
 	return(R)
 }
