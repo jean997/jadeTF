@@ -206,6 +206,8 @@ get_AtAy <- function(y, sds){
 
 
 #Coppied from GWAS Tools
+#' Get an object from an .RData file
+#' @export
 getobj <- function (Rdata){
     objname <- load(Rdata)
     if (length(objname) > 1) {
