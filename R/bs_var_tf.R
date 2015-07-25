@@ -18,21 +18,22 @@
 #'@export
 bs_var_tf <- function(Y, lambda, sample.size,
 										READS=NULL,  sds=NULL, calc.sds=TRUE,
-										positions=NULL, scale.pos=NULL, ord=2,
+										pos=NULL, scale.pos=NULL, ord=2,
 										n.rep=100){
 
 		p <- dim(Y)[1] #Number of sites
 		k <- dim(Y)[2] #Number of samples
 
 		#Scale positions
-    if(!is.null(positions)){
-      stopifnot(length(positions)==p)
+    if(!is.null(pos)){
+      stopifnot(length(pos)==p)
     }else{
         pos <- 1:p
     }
+		pos.give=pos
     if(!is.null(scale.pos)){
-      R <-range(positions)
-      pos <- scale.pos* ((positions-R[1])/(R[2]-R[1]))
+      R <-range(pos)
+      pos <- scale.pos* ((pos-R[1])/(R[2]-R[1]))
     }
 
 		if(is.null(sds)) sds <- rep(1, p)

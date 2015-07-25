@@ -89,6 +89,7 @@ cv_fit0 <- function(orig.fit, n.folds=5, which.fold=1:n.folds, data.file=NULL,
     out.ct <- out.ct + 1
 	}
 	if(length(which.fold)==1) out = out[[1]]
-	return(out)
+	if(return.objects) return(out)
+	  else return()
 }
 
