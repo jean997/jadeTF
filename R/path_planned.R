@@ -127,6 +127,8 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
 			closest.idx <- which.min(abs(log.gammas[-i][-1]-new.gamma))+1
 			#cat("Theta init idx ", closest.idx, "\n")
 			theta0 <- fits[[closest.idx]]$fits
+			u.alpha0 <- fits[[closest.idx]]$u.alpha
+			u.beta0 <- fits[[closest.idx]]$u.beta
 	}
 
 	while(!done){
