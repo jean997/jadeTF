@@ -192,7 +192,7 @@ sep_gd <- function(obj, tol=1e-6){
     sep[[j]] <- list()
     for(i in (j+1):K){
       u<- obj$duals[[j]][[i-j]]
-      bound <- obj$gamma*(sqrt(obj$fit.var[,i] + obj$fit.var[,j]))
+      bound <- obj$gamma*obj$var.wts[[j]][[i-j]]
       w <- obj$subset.wts[[j]][[i-j]]
       bound[w==0] <- Inf
       sep[[j]][[i-j]] <- rep(0, p)

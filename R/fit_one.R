@@ -1,8 +1,8 @@
 
 #Fit one sample
 #Missing points are imputed
-#Minimize N/(2) || (y - \theta)/sds ||^2 + \lambda_1||D\theta||_1
-#Equivalent to 1/2 || w*(y - \theta) ||^2 + \lambda_1/N||D\theta||_1
+#Minimize N/(2) || (y - \theta)/sds ||^2 + \lambda_1||D\theta||_1 + \lambda_2||\theta||_1
+#Equivalent to 1/2 || w*(y - \theta) ||^2 + \lambda_1/N||D\theta||_1 + \lambda2/N||\theta||_1
 fit_one <- function(y, lambda, pos, sds, sample.size, ord,
                     lambda2=0, metric=c("mse", "abs", "pois"), truncate.metric=Inf, shift=NULL){
 
@@ -23,7 +23,7 @@ fit_one <- function(y, lambda, pos, sds, sample.size, ord,
 
   if(is.na(lambda)){
     cv <- cv_pred.genlasso(obj=tfit.out, n.folds = 5, mode = "predict",
-                           lambda2=lambda2, metric=metric, truncate.metric=truncate.metric,
+                           lambda2=lambda2/sample.size, metric=metric, truncate.metric=truncate.metric,
                            shift=shift)
     l <- cv$lambda.1se
     lambda <- l*sample.size
@@ -37,7 +37,7 @@ fit_one <- function(y, lambda, pos, sds, sample.size, ord,
   co <- coef.genlasso(tfit.out, lambda = l, type="primal")$beta
 
   if(lambda2 > 0){
-    co <- soft_threshold(co, lambda2/(wts^2))
+    co <- soft_threshold(co, lambda2/(sample.size*(wts^2)))
   }
 
 

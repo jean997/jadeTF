@@ -39,7 +39,6 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
                             start.step=0.03, tol=1e-3, max.fits= 10*n.fits,
                             buffer=0.001, restart.file=NULL, verbose=TRUE){
 
-  alg = fit0$algorithm
 
 	if(is.null(temp.file)){
     z <- unlist(strsplit(out.file, ".RData"))[1]
@@ -51,7 +50,7 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
     fit0.file <- fit0
     fit0 <- getobj(fit0.file)
   }
-
+  alg = fit0$algorithm
   sep0 <- get_sep(fit0$fits, tol)
 
 	#Set up for fits

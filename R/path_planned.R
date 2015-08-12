@@ -58,7 +58,7 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
                               temp.file=NULL, max.it=10000, log.gamma.max=20,
                               restart.file=NULL, hard.stop=FALSE){
 
-  alg <-  fit0$algorithm
+
 	if(is.null(temp.file)){
     z <- unlist(strsplit(out.file, ".RData"))[1]
 		temp.file <- paste(z, "_temp.RData", sep="")
@@ -74,6 +74,7 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
     fit0.file <- fit0
     fit0 <- getobj(fit0.file)
   }
+  alg <-  fit0$algorithm
   sep0 <- get_sep(fit0$fits, tol)
 
   #Set up
