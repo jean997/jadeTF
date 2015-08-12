@@ -9,114 +9,6 @@
 
 #Contains small utility functions
 
-#Fit one sample
-#Missing points are imputed
-#Minimize N/(2) || (y - \theta)/sds ||^2 + \lambda_1||D\theta||_1
-#Equivalent to 1/2 || w*(y - \theta) ||^2 + \lambda_1/N||D\theta||_1
-fit_one <- function(y, lambda, pos, sds, sample.size, ord){
-    p <- length(y)
-		nm <- which(!is.na(y))
-		wts <- 1/sds[nm]
-		equal.wts <- all(wts == wts[1])
-		#If all the weights are equal solve
-		#Minimize 1/2 || y - \theta ||^2 + (\lambda_1/(N*w^2)||D\theta||_1
-
-		if(equal.wts){
-			tfit.out <- genlasso::trendfilter(y=y[nm], pos=pos[nm], ord=ord)
-		}else{
-		  tfit.out <- trendfilter_weights(y=y[nm], pos=pos[nm], wts=wts, ord=ord)
-		}
-
-    if(is.na(lambda)){
-      cv <- cv_pred.genlasso(obj=tfit.out, n.folds = 5, mode = "predict")
-      l <- cv$lambda.1se
-      lambda <- l*sample.size
-      if(equal.wts) lambda <- lambda*(wts[1])^2
-      cat(lambda, "\n")
-		}else if(equal.wts){
-			l <- lambda/(sample.size*wts[1]^2)
-		}else{
-			l <- lambda/sample.size
-		}
-		co <- coef.genlasso(tfit.out, lambda = l, type="primal")$beta
-		if(any(is.na(y))){
-		  fit = .Call("tf_predict_R",
-		              sBeta = as.double(co),
-		              sX = as.double(tfit.out$pos),
-		              sN = length(tfit.out$y),
-		              sK = as.integer(tfit.out$ord),
-		              sX0 = as.double(pos),
-		              sN0 = length(pos),
-		              sNLambda = 1,
-		              sFamily = 0,
-		              sZeroTol = as.double(1e-6), package="jadeTF")
-		}else{
-		  fit <- co
-		}
-    return(list("fit"=fit, "lambda"=lambda))
-}
-
-
-#Fit JADE at gamma=0
-fit_gamma0 <- function(y, lambda, pos, sample.size, sds, ord){
-		p <- dim(y)[1]
-		K <- dim(y)[2]
-
-		stopifnot(length(sample.size)==K)
-		if(is.null(sds)) sds <- matrix(1, p, K)
-
-		if(is.null(lambda)){
-				lambda <- rep(NA, K)
-		}else{
-				stopifnot(length(lambda)==K)
-		}
-
-		fit <- matrix(0, p, K)
-		for(j in 1:K){
-				f <- fit_one(y[,j], lambda[j], pos, sds[,j], sample.size[j], ord=ord)
-				fit[,j] <- f$fit
-				if(is.na(lambda[j])){
-						lambda[j] <- f$lambda
-				}
-		}
-		return(list("fit"=fit, "lambda"=lambda))
-}
-
-#Fit JADE at gamma max
-fit_gammamax <- function(y, lambda, pos, sample.size, sds, ord){
-		p <- dim(y)[1]
-		K <- dim(y)[2]
-
-		stopifnot(length(sample.size)==K)
-		if(is.null(sds)) sds <- matrix(1, p, K)
-
-
-		miss <- is.na(y)
-
-		y[miss] <- 0
-		sds[miss] <- 0
-		ss <- matrix(rep(sample.size, p), byrow=TRUE, nrow=p)
-		z <- ss/(sds^2); z[miss] <- 0
-		new.sigma <- sqrt( 1/ rowSums(z) )
-		new.y <- (y*ss)/(sds^2); new.y[miss] <- 0
-		new.y <- rowSums(new.y)*(new.sigma^2)
-		if(is.null(lambda)){
-			new.lam <- NA
-		}else{
-				stopifnot(length(lambda)==K)
-				new.lam <- sum(lambda)
-		}
-
-		fit <- fit_one(new.y, new.lam, pos, new.sigma, 1, ord)
-		if(is.null(lambda)){
-			l <- fit$lambda/sum(sample.size)
-			lambda <- sample.size * l
-		}
-
-		fit <- matrix(rep(fit$fit, K), byrow=FALSE, nrow=p)
-		return(list("fit"=fit, "lambda"=lambda))
-}
-
 #Default weights
 default_wts <- function(p, K){
 	wts <- list()
@@ -129,17 +21,61 @@ default_wts <- function(p, K){
 	return(wts)
 }
 
-pairwise_wts <- function(subset.wts, fit_var, sample.size){
+wts_from_var <- function(fit.var){
+  wts <- list()
+  for(j in 1:(K-1)){
+    wts[[j]] <- list()
+    for(i in (j+1):K){
+      wts[[j]][[i-j]] <- sqrt(fit.var[,i] + fit.var[,j])
+    }
+  }
+  return(wts)
+}
+
+pairwise_wts <- function(subset.wts, fit.var, sample.size){
 	K <- length(subset.wts)+1
 	pw <- list()
 	for(j in 1:(K-1)){
 		pw[[j]] <- list()
 		for(i in (j+1):K){
-			pw[[j]][[i-j]] <- subset.wts[[j]][[i-j]]*sqrt( fit_var[i] + fit_var[j])
+			pw[[j]][[i-j]] <- subset.wts[[j]][[i-j]]*sqrt( fit.var[i] + fit.var[j])
 		}
 	}
 	return(pw)
 }
+
+
+#For jade_gd: Duals get initialized on the boundary if initial values not given
+starting_duals <- function(fit, gamma, var.wts, sample.size, subset.wts){
+  p <- dim(fit)[1]
+  K <- dim(fit)[2]
+  duals <- list()
+  for(j in 1:(K-1)){
+    duals[[j]] <- list()
+    for(i in (j+1):K){
+      u<- gamma*var.wts[[j]][[i-j]] * as.vector(sign(fit[,j]-fit[,i]))
+      w <- subset.wts[[j]][[i-j]]
+      u[w==0] <- 0
+      duals[[j]][[i-j]] <- u
+    }
+  }
+  return(duals)
+}
+constrain_duals <- function(duals, gamma, var.wts, sample.size, subset.wts){
+  p <- length(duals[[1]][[1]])
+  K <- length(sample.size)
+  for(j in 1:(K-1)){
+    for(i in (j+1):K){
+      u<- duals[[j]][[i-j]]
+      u <- sign(u)*pmin(abs(u), gamma*var.wts[[j]][[i-j]])
+      w <- subset.wts[[j]][[i-j]]
+      u[w==0] <- 0
+      duals[[j]][[i-j]] <- u
+    }
+  }
+  return(duals)
+}
+
 
 soft_threshold <- function(vec,lam){
   # Soft threshold function
@@ -218,7 +154,7 @@ getobj <- function (Rdata){
 }
 
 
-#' Determine which pairs of sites are fused.
+#' Determine which pairs of sites are separated.
 #' @param fits A p x K matrix of fits. To recalculate separation
 #' for a \code{jade_admm} object use \code{fits=obj$beta}.
 #' @param tol Tolerance for determining separation
@@ -239,6 +175,33 @@ get_sep <- function(fits, tol){
 	}
 	return(sep)
 }
+
+#' Determine which pairs of sites are separated from a jade_gd object.
+#' @param obj A jade_gd object
+#' for a \code{jade_admm} object use \code{fits=obj$beta}.
+#' @param tol Tolerance for determining separation
+#' @return A list of lists of length p vectors containing 0s and 1s.
+#' The vector stored in \code{[[i]][[j-i]]} indicates the separation between group i and group j.
+#' @export
+sep_gd <- function(obj, tol=1e-6){
+
+  p <- length(obj$duals[[1]][[1]])
+  K <- length(obj$sample.size)
+  sep <- list()
+  for(j in 1:(K-1)){
+    sep[[j]] <- list()
+    for(i in (j+1):K){
+      u<- obj$duals[[j]][[i-j]]
+      bound <- obj$gamma*(sqrt(obj$fit.var[,i] + obj$fit.var[,j]))
+      w <- obj$subset.wts[[j]][[i-j]]
+      bound[w==0] <- Inf
+      sep[[j]][[i-j]] <- rep(0, p)
+      sep[[j]][[i-j]][(abs(abs(u) -bound)) < tol] <- 1
+    }
+  }
+  return(sep)
+}
+
 
 pair_to_idx <- function(i, j, K){
   if(i==j) stop("i == j given to pair_to_idx")
@@ -304,22 +267,46 @@ h <- function(x, p, pos, ord){
 }
 
 #JADE Objective function for trend filtering problem
-obj_fct <-  function(y, tfits, lambda, gamma, sample.size, subset.wts, fit_var, pos, ord){
+#These are used by jade_gd
+
+obj_fct <-  function(y, theta, lambda1, lambda2, gamma, sample.size,
+                     subset.wts, sds, var.wts, pos, ord){
 
   p <- dim(y)[1]
   K <- dim(y)[2]
 
-  obj_value <- 0
+  obj.value <- 0
   for(j in 1:K){
-    obj_value <- obj_value + (sample.size[j]/2)*sum((y[,j]-tfits[,j])^2) + lambda[j]*h(tfits[,j], p, pos, ord)
+    obj.value <- obj.value + (sample.size[j]/2)*sum((y[,j]-theta[,j])^2, na.rm=TRUE) +
+      lambda1[j]*h(theta[,j], p, pos, ord)+lambda2[j]*sum(abs(theta[,j]))
     if(j==K) next
     for (i in (j+1):K){
-      pen <- gamma*sum(abs(tfits[,j]-tfits[,i])*subset.wts[[j]][[i-j]]*(sqrt(fit_var[,i] + fit_var[,j])))
-      obj_value <- obj_value + pen
+      pen <- gamma*sum(abs(theta[,j]-theta[,i])*subset.wts[[j]][[i-j]]*(var.wts[[j]][[i-j]]))
+      obj.value <- obj.value + pen
     }
   }
-  return(obj_value)
+  return(obj.value)
 }
+
+#Dual formulation of objective
+dual_fct <- function(y, theta, duals, lambda1, lambda2, sample.size, pos, ord, sds){
+  K <- dim(y)[2]
+  dual_value <- 0
+  p <- dim(y)[1]
+  for(j in 1:K){
+    dual_value <- dual_value + (sample.size[j]/2)*sum(((y[,j]-theta[,j])/sds[,j])^2, na.rm=TRUE) +
+      lambda1[j]*h(theta[,j], p, pos, ord)+lambda2[j]*sum(abs(theta[,j]))
+    if(j==K) next
+    for (i in (j+1):K){
+      u <- duals[[j]][[i-j]]
+      pen <- sum(u*(theta[,j]-theta[,i]))
+      dual_value <- dual_value + pen
+    }
+  }
+  return(dual_value)
+}
+
+
 
 expit <- function(x){return(exp(x)/(1 + exp(x)))}
 logit <- function(x){return( log(x/(1-x)))}

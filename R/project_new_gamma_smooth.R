@@ -34,7 +34,7 @@ project_new_gamma_smooth <- function(l1.target, l1.total, log.gammas,
              sN0 = length(x.new),
              sNLambda = 1,
              sFamily = 0,
-             sZeroTol = as.double(1e-6),
+             sZeroTol = as.double(1e-11),
              package = "jadeTF")
 
   new.gamma <- NA

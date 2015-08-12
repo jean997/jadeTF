@@ -58,6 +58,7 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
                               temp.file=NULL, max.it=10000, log.gamma.max=20,
                               restart.file=NULL, hard.stop=FALSE){
 
+  alg <-  fit0$algorithm
 	if(is.null(temp.file)){
     z <- unlist(strsplit(out.file, ".RData"))[1]
 		temp.file <- paste(z, "_temp.RData", sep="")
@@ -109,8 +110,12 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
 	i <- 2
 
 	theta0=fit0$fits
-	u.alpha0=NULL
-	u.beta0=NULL
+	if(alg=="admm"){
+	  u.alpha0=NULL
+	  u.beta0=NULL
+	}else if(alg=="gd"){
+	  duals0=NULL
+	}
 	done <- FALSE
 
 	#Restarting from a temp file
@@ -127,19 +132,30 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
 			closest.idx <- which.min(abs(log.gammas[-i][-1]-new.gamma))+1
 			#cat("Theta init idx ", closest.idx, "\n")
 			theta0 <- fits[[closest.idx]]$fits
-			u.alpha0 <- fits[[closest.idx]]$u.alpha
-			u.beta0 <- fits[[closest.idx]]$u.beta
+			if(alg=="admm"){
+			  u.alpha0=fits[[closest.idx]]$u.alpha
+			  u.beta0=fits[[closest.idx]]$u.beta
+			}else if(alg=="gd"){
+			  duals0=fits[[closest.idx]]$duals
+			}
 	}
 
 	while(!done){
 		g <- 10^log.gammas[i]
 		#if(verbose) cat("Gamma", g, "\n")
-		if(fit0$algorithm=="admm"){
+		if(alg=="admm"){
 		  fit <- jade_admm(y=fit0$y, gamma=g, pos=fit0$pos, scale.pos=fit0$scale.pos,
 		                   lambda=fit0$lambda, sample.size=fit0$sample.size, ord=fit0$ord,
 		                   sds=fit0$sds, fit.var=fit0$fit.var,
 		                   theta0=theta0, u.alpha0=u.alpha0, u.beta0=u.beta0,
 		                   tol=tol,  max.it=max.it)
+		}else if(alg=="gd"){
+		  fit <- jade_gd(y=fit0$y, gamma=g, pos=fit0$pos, scale.pos=fit0$scale.pos,
+		                 lambda1=fit0$lambda1, lambda2=fit0$lambda2,
+		                 sample.size=fit0$sample.size, ord=fit0$ord,
+		                 sds=fit0$sds, fit.var=fit0$fit.var,
+		                 theta0=theta0, duals0=duals0,
+		                 sep.tol=tol,  max.it=max.it)
 		}
 		fits[[i]] <- fit
 
@@ -180,9 +196,12 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
 		closest.idx <- which.min(abs(log.gammas[-1]-new.gamma))+1
 		#cat("Theta init idx ", closest.idx, "\n")
 		theta0 <- fits[[closest.idx]]$fits
-		u.alpha0 <- fits[[closest.idx]]$u.alpha
-		u.beta0 <- fits[[closest.idx]]$u.beta
-
+		if(alg=="admm"){
+		  u.alpha0 <- fits[[closest.idx]]$u.alpha
+		  u.beta0 <- fits[[closest.idx]]$u.beta
+		}else if(alg=="gd"){
+		  duals0 <-  fits[[closest.idx]]$duals
+		}
 		log.gammas <- c(log.gammas, new.gamma)
 		i <- i+1
 		path.temp <- list("JADE_fits"=fits, "sep"=sep, "l1.total" = l1.total, "converged"=converged,

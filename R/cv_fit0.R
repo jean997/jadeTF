@@ -64,6 +64,11 @@ cv_fit0 <- function(orig.fit, n.folds=5, which.fold=1:n.folds, data.file=NULL,
       fit <- jade_admm(y=new.y, gamma=0, pos=orig.fit$pos, scale.pos=orig.fit$scale.pos,
                        lambda=lambda.i, sample.size=orig.fit$sample.size, ord=orig.fit$ord,
                        sds=orig.fit$sds, tol=orig.fit$tol)
+    }else if(orig.fit$algorithm=="gd"){
+      fit <- jade_gd(y=new.y, gamma=0, pos=orig.fit$pos, scale.pos=orig.fit$scale.pos,
+                       lambda1=lambda.i, lambda2=orig.fit$lambda2,
+                       sample.size=orig.fit$sample.size, ord=orig.fit$ord,
+                       sds=orig.fit$sds, sep.tol=orig.fit$tol)
     }
 
 	  #Get fit.var

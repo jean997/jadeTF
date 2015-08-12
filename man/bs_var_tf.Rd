@@ -5,8 +5,7 @@
 \title{Estimate variance of a trendfiltering fit by bootstrapping}
 \usage{
 bs_var_tf(Y, lambda, sample.size, READS = NULL, sds = NULL,
-  calc.sds = TRUE, positions = NULL, scale.pos = NULL, ord = 2,
-  n.rep = 100)
+  calc.sds = TRUE, pos = NULL, scale.pos = NULL, ord = 2, n.rep = 100)
 }
 \arguments{
 \item{Y}{A matrix of complete (not average) data for one group.}
@@ -18,13 +17,13 @@ calculated unless \code{calc.sds=FALSE}}
 \item{sds}{A matrix of estimated standard deviations of \code{Y}. If missing
 observations are assumed to have equal variance.}
 
+\item{pos}{Vector of positions corresponding to the rows of \code{Y}}
+
 \item{scale.pos}{}
 
 \item{ord}{Order of trendfiltering. Can be 0, 1 or 2.}
 
 \item{n.rep}{Number of bootstrap samples to take.}
-
-\item{pos}{Vector of positions corresponding to the rows of \code{Y}}
 }
 \value{
 A list with three elements
