@@ -51,7 +51,7 @@ fit_one <- function(y, lambda, pos, sds, sample.size, ord,
                 sN0 = length(pos),
                 sNLambda = 1,
                 sFamily = 0,
-                sZeroTol = as.double(1e-6), package="jadeTF")
+                sZeroTol = as.double(1e-11), package="jadeTF")
   }else{
     fit <- co
   }

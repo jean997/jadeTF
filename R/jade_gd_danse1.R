@@ -52,7 +52,7 @@ jade_gd <- function(y, gamma, pos = NULL, scale.pos=NULL,
 													sds=NULL, fit.var=NULL, var.wts=NULL, subset.wts=NULL,
                           theta0=NULL, duals0=NULL, verbose=FALSE, sep.tol=1e-3,
 													max.it=1000, thresh=1e-8, stepsize=NULL,
-													eps=0, cv.metric=c("mse", "abs", "pois"), truncate.metric=100, shift=NULL){
+													eps=0, cv.metric=c("mse", "abs", "pois"), truncate.metric=100, shift=NULL, debug=FALSE){
 
   metric <- match.arg(cv.metric)
 
@@ -185,7 +185,12 @@ jade_gd <- function(y, gamma, pos = NULL, scale.pos=NULL,
 		if((lb1-lb0)>1e-8){
 			cat("Error! Theta update didn't reduce dual function: ", lb1-lb0, "\n")
 			ERRS <- ERRS+1
-      if(verbose){cat("Error..", E, "\n")}
+      if(verbose){cat("Error..", ERRS, "\n")}
+			if(debug){
+			  R = list("y"=y, "tprev"=tprev, "theta"=theta, "duals"=duals, "sds"=sds, "lambda1"=lambda1,
+			           "lambda2"=lambda2, "sample.size"=sample.size, "ord"=ord, "pos"=pos)
+			  return(R)
+			}
 		}
 			######
 		UB <- c(UB, upper.bound)
@@ -196,7 +201,8 @@ jade_gd <- function(y, gamma, pos = NULL, scale.pos=NULL,
 			for(i in (j+1):K){
 				u <- duals[[j]][[i-j]]
 				#Gradient step
-				u <- u + stepsize*(theta[,j]-theta[,i] - eps*u)
+				#plus bigger-smaller
+				u <- u + stepsize*(theta[,i]-theta[,j] - eps*u)
 				#Box constraint
 				w <- var.wts[[j]][[i-j]]
 				u <- sign(u)*pmin(abs(u), gamma*w)
@@ -243,10 +249,12 @@ jade_gd <- function(y, gamma, pos = NULL, scale.pos=NULL,
 
 
 #Minimize dual wrt thetas
-#This is accomplished by TF_JADE_upd.py
-#called by through rPython
 #For each j solve
-# 1/2 || (Ay - A^-1 u/n) - A\theta ||_2_^2 + lambda_1/n || D\theta ||_1 + lambda_2/n || \theta ||_1
+###
+# n/2 || Ay - A\theta ||_2_^2 +  u\theta + lambda_1 || D\theta ||_1 + lambda_2 || \theta ||_1
+###
+# 1/2 (\theta^T A^T A \theta - (2y^TA^TA\theta - 2u/n)\theta   )
+# 1/2 || (A^Ty - A^-1 u/n) - A\theta ||_2_^2 + lambda_1/n || D\theta ||_1 + lambda_2/n || \theta ||_1
 theta_update_tf <- function(y, duals, sds, lambda1, lambda2, sample.size, pos, ord){
 	K <- dim(y)[2]
 	p <- dim(y)[1]
@@ -261,12 +269,14 @@ theta_update_tf <- function(y, duals, sds, lambda1, lambda2, sample.size, pos, o
 		u <- rep(0, p)
 		if(j < K){
 			for(k in (j+1):K){
-				u <-  u + duals[[j]][[k-j]]
+			  #j is smaller so substract
+				u <-  u - duals[[j]][[k-j]]
 			}
 		}
 		if(j > 1){
 			for(k in 1:(j-1)){
-				u <-  u - duals[[k]][[j-k]]
+			  #j is larger so add
+				u <-  u + duals[[k]][[j-k]]
 			}
 		}
 
@@ -274,26 +284,16 @@ theta_update_tf <- function(y, duals, sds, lambda1, lambda2, sample.size, pos, o
 		new.y <- as.vector(weights[,j]*y[,j] -( u/(weights[,j]*sample.size[j]) ))
 		#cat(length(new.y),  ord, "\n")
 		new.lam1 <- lambda1[j]/sample.size[j]
-		if(all(weights[nm,j]==weights[nm,j][1])){
-			new.lam1 <- new.lam1/(weights[nm,j][1]^2)
+		if(all(weights[nm,j]==1)){
 			out <- genlasso:::trendfilter(y=new.y[nm], pos=pos[nm], ord=ord)
 		}else{
 		  out <-  trendfilter_weights(y=new.y[nm], pos=pos[nm], ord=ord, wts=weights[nm,j])
-
 		}
-		co <- coef.genlasso(out, lambda=new.lam1, type="primal")$beta
-
-		if(lambda2[j] > 0){
-			if(all(weights[nm,j]==weights[nm,j][1])){
-				co <- soft_threshold(co, lambda2[j]/(sample.size[j]*weights[nm,j][1]^2))
-			}else{
-				co <- soft_threshold(co, lambda2[j]/(sample.size[j]*weights[nm,j]^2))
-			}
-		}
+		co.nm <- coef.genlasso(out, lambda=new.lam1, type="primal")$beta
 
 		if(length(nm) < p){
 				co = .Call("tf_predict_R",
-                    sBeta = as.double(co),
+                    sBeta = as.double(co.nm),
                     sX = as.double(pos[nm]),
                     sN = length(nm),
                     sK = as.integer(ord),
@@ -303,7 +303,12 @@ theta_update_tf <- function(y, duals, sds, lambda1, lambda2, sample.size, pos, o
                     sFamily = 0,
                     sZeroTol = as.double(1e-11),
                     package = "jadeTF")
+		}else{
+		  co <- co.nm
+		}
 
+		if(lambda2[j] > 0){
+		  co <- soft_threshold(co, lambda2[j]/(sample.size[j]))
 		}
 
 		fits[,j] <- co

@@ -277,11 +277,12 @@ obj_fct <-  function(y, theta, lambda1, lambda2, gamma, sample.size,
 
   obj.value <- 0
   for(j in 1:K){
-    obj.value <- obj.value + (sample.size[j]/2)*sum((y[,j]-theta[,j])^2, na.rm=TRUE) +
+    nm <- which(!is.na(y[,j]))
+    obj.value <- obj.value + (sample.size[j]/2)*sum((y[nm,j]-theta[nm,j])^2) +
       lambda1[j]*h(theta[,j], p, pos, ord)+lambda2[j]*sum(abs(theta[,j]))
     if(j==K) next
     for (i in (j+1):K){
-      pen <- gamma*sum(abs(theta[,j]-theta[,i])*subset.wts[[j]][[i-j]]*(var.wts[[j]][[i-j]]))
+      pen <- gamma*sum(abs(theta[,j]-theta[,i])*subset.wts[[j]][[i-j]]*var.wts[[j]][[i-j]])
       obj.value <- obj.value + pen
     }
   }
@@ -294,12 +295,14 @@ dual_fct <- function(y, theta, duals, lambda1, lambda2, sample.size, pos, ord, s
   dual_value <- 0
   p <- dim(y)[1]
   for(j in 1:K){
-    dual_value <- dual_value + (sample.size[j]/2)*sum(((y[,j]-theta[,j])/sds[,j])^2, na.rm=TRUE) +
+    nm <- which(!is.na(y[,j]))
+    dual_value <- dual_value + (sample.size[j]/2)*sum(((y[nm,j]-theta[nm,j])/sds[nm,j])^2) +
       lambda1[j]*h(theta[,j], p, pos, ord)+lambda2[j]*sum(abs(theta[,j]))
     if(j==K) next
     for (i in (j+1):K){
       u <- duals[[j]][[i-j]]
-      pen <- sum(u*(theta[,j]-theta[,i]))
+      #plus bigger-smaller
+      pen <- sum(u*(theta[,i]-theta[,j]))
       dual_value <- dual_value + pen
     }
   }
