@@ -93,7 +93,9 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 
 	if(alg=="admm"){
 	  u.alpha0=NULL
+	  rho.alpha=NULL
 	  u.beta0=NULL
+	  rho.beta=1
 	}else if(alg=="gd"){
 	  duals0=NULL
 	}
@@ -128,8 +130,10 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 			#cat("Theta init idx ", closest.idx, "\n")
 			theta0 <- fits[[closest.idx]]$fits
 			if(alg=="admm"){
-			  u.alpha0 <- fits[[closest.idx]]$u.alpha
-			  #u.beta0 <- fits[[closest.idx]]$u.beta
+			  u.alpha0=fits[[closest.idx]]$u.alpha
+			  rho.alpha=fits[[closest.idx]]$rho.alpha
+			  u.beta0=fits[[closest.idx]]$u.beta
+			  rho.beta=fits[[closest.idx]]$rho.beta
 			}else if(alg=="gd"){
 			  duals0=fits[[closest.idx]]$duals
 			}
@@ -143,8 +147,8 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 		  fit <- jade_admm(y=fit0$y, gamma=g, pos=fit0$pos, scale.pos=fit0$scale.pos,
 		                   lambda=fit0$lambda, sample.size=fit0$sample.size, ord=fit0$ord,
 		                   sds=fit0$sds, fit.var=fit0$fit.var,
-		                   theta0=theta0, u.alpha0=u.alpha0, u.beta0=u.beta0,
-		                   tol=tol,  max.it=max.it)
+		                   theta0=theta0, u.alpha0=u.alpha0, u.beta0=u.beta0, rho.beta=rho.beta,
+		                   rho.alpha=rho.alpha, tol=tol,  max.it=max.it)
 		}else if(alg=="gd"){
 		  fit <- jade_gd(y=fit0$y, gamma=g, pos=fit0$pos, scale.pos=fit0$scale.pos,
 		                   lambda1=fit0$lambda1, lambda2=fit0$lambda2,
@@ -202,8 +206,10 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 		#cat("Theta init idx ", closest.idx, "\n")
 		theta0 <- fits[[closest.idx]]$fits
 		if(alg=="admm"){
-		  u.alpha0 <- fits[[closest.idx]]$u.alpha
-		  #u.beta0 <- fits[[closest.idx]]$u.beta
+		  u.alpha0=fits[[closest.idx]]$u.alpha
+		  rho.alpha=fits[[closest.idx]]$rho.alpha
+		  u.beta0=fits[[closest.idx]]$u.beta
+		  rho.beta=fits[[closest.idx]]$rho.beta
 		}else if(alg=="gd"){
 		  duals0 <-  fits[[closest.idx]]$duals
 		}
