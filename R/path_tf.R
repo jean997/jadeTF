@@ -129,7 +129,7 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 			theta0 <- fits[[closest.idx]]$fits
 			if(alg=="admm"){
 			  u.alpha0 <- fits[[closest.idx]]$u.alpha
-			  u.beta0 <- fits[[closest.idx]]$u.beta
+			  #u.beta0 <- fits[[closest.idx]]$u.beta
 			}else if(alg=="gd"){
 			  duals0=fits[[closest.idx]]$duals
 			}
@@ -203,7 +203,7 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 		theta0 <- fits[[closest.idx]]$fits
 		if(alg=="admm"){
 		  u.alpha0 <- fits[[closest.idx]]$u.alpha
-		  u.beta0 <- fits[[closest.idx]]$u.beta
+		  #u.beta0 <- fits[[closest.idx]]$u.beta
 		}else if(alg=="gd"){
 		  duals0 <-  fits[[closest.idx]]$duals
 		}

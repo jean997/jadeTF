@@ -134,8 +134,8 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
 			#cat("Theta init idx ", closest.idx, "\n")
 			theta0 <- fits[[closest.idx]]$fits
 			if(alg=="admm"){
-			  u.alpha0=fits[[closest.idx]]$u.alpha
-			  u.beta0=fits[[closest.idx]]$u.beta
+			  #u.alpha0=fits[[closest.idx]]$u.alpha
+			  #u.beta0=fits[[closest.idx]]$u.beta
 			}else if(alg=="gd"){
 			  duals0=fits[[closest.idx]]$duals
 			}
@@ -198,8 +198,8 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
 		#cat("Theta init idx ", closest.idx, "\n")
 		theta0 <- fits[[closest.idx]]$fits
 		if(alg=="admm"){
-		  u.alpha0 <- fits[[closest.idx]]$u.alpha
-		  u.beta0 <- fits[[closest.idx]]$u.beta
+		  #u.alpha0 <- fits[[closest.idx]]$u.alpha
+		  #u.beta0 <- fits[[closest.idx]]$u.beta
 		}else if(alg=="gd"){
 		  duals0 <-  fits[[closest.idx]]$duals
 		}
