@@ -56,7 +56,8 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
                               n.fits=NULL, log.gamma.stop=NULL, step.size=NULL,
                               tol=1e-3, verbose = TRUE,
                               temp.file=NULL, max.it=10000, log.gamma.max=20,
-                              restart.file=NULL, hard.stop=FALSE){
+                              restart.file=NULL, hard.stop=FALSE,
+                              adjust.rho.alpha=FALSE){
 
 
 	if(is.null(temp.file)){
@@ -153,7 +154,7 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
 		                   lambda=fit0$lambda, sample.size=fit0$sample.size, ord=fit0$ord,
 		                   sds=fit0$sds, fit.var=fit0$fit.var,
 		                   theta0=theta0, u.alpha0=u.alpha0, u.beta0=u.beta0, rho.beta=rho.beta,
-		                   rho.alpha=rho.alpha, tol=tol,  max.it=max.it)
+		                   rho.alpha=rho.alpha, tol=tol,  max.it=max.it, adjust.rho.alpha=adjust.rho.alpha)
 		}else if(alg=="gd"){
 		  fit <- jade_gd(y=fit0$y, gamma=g, pos=fit0$pos, scale.pos=fit0$scale.pos,
 		                 lambda1=fit0$lambda1, lambda2=fit0$lambda2,
