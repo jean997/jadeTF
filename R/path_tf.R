@@ -185,6 +185,7 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 		l1.top <- min(l1.total[sep.total >= sep.total0])
 		l1.gap <- l1.top/n.fits
 		lg.top <- max(log.gammas[sep.total >= sep.total0])
+    if(!is.finit(lg.top)) lg.top <- min(log.gammas[-1])
 
 		#Find the next gamma to evaluate
 		keep.fits <- which(l1.total <= l1.total0 & is.finite(log.gammas))
