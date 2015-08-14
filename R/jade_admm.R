@@ -174,7 +174,7 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
     else u.alpha <- u.alpha0
 
   beta <- theta
-  if(is.null(u.beta0)) u.beta <-  beta-theta
+  if(is.null(u.beta0)) u.beta <-  matrix(0, nrow=p, ncol=K)
     else u.beta <- u.beta0
 
   #Inverses for theta_update
