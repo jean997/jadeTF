@@ -106,9 +106,16 @@ cv_err_wts <- function(orig.path, cv.path.list=NULL,
 	err.se.l1 <- rep(NA, n.gamma)
 	err.se.l1[keep.fits[[1]]] <- sqrt(apply(cv.err.l1, MARGIN=2, FUN=sd)/n.folds)
 	cv.min.l1 <-  which.min(err.l1)
+	if(length(cv.min.l1) > 1){
+	  g <- orig.path$gammas[cv.min.l1]
+	  cv.min.l1 <- cv.min.l1[ which.min(g)]
+	}
 	cv.1se.l1.w <-  orig.path$l1.total[which(err.l1 < (err.l1[cv.min.l1] + err.se.l1[cv.min.l1]))]
 	cv.1se.l1 <- which(orig.path$l1.total==min(cv.1se.l1.w))
-
+	if(length(cv.1se.l1) > 1){
+	  g <- orig.path$gammas[cv.1se.l1]
+	  cv.1se.l1 <- cv.1se.l1[ which.min(g)]
+	}
 	return(list("sep.total"=orig.path$sep.total, "l1.total"=orig.path$l1.total,
 			"cv.err.l1"=cv.err.l1,  "err.l1"=err.l1, "err.se.l1"=err.se.l1,
 			"cv.min.l1"=cv.min.l1, "cv.1se.l1"=cv.1se.l1,
