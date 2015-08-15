@@ -267,6 +267,13 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
     rel.cri.dual <- sqrt(sum((t(D)%*%u.alpha)^2)) + sqrt(sum(u.beta^2))
     e.dual <- sqrt(K*(alpha.size + p))*e.abs + e.rel*rel.cri.dual
     e.primal <- sqrt(K*(alpha.size + p))*e.abs  + e.rel*rel.cri.pri
+
+    if(verbose){
+      cat(primal.resid.norm, " ", e.primal, "\n")
+      cat(dual.resid.norm, " ", e.dual, "\n")
+      cat((primal.resid.norm < e.primal & dual.resid.norm < e.dual), "\n")
+      cat(max(abs(theta.old-theta)), "\n")
+    }
     if( primal.resid.norm < e.primal & dual.resid.norm < e.dual){
       converged <- TRUE
       done <- TRUE

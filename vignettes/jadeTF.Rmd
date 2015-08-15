@@ -65,7 +65,7 @@ Here we've chosen an intermediate value of $\gamma$ which results in some fused 
 ```{r, eval=FALSE}
 fit1 <- jade_admm(y, gamma=10^(-0.12), ord=2, sample.size = c(10, 15), lambda=fit0$lambda)
 ```
-The `jade_admm` function is the workhorse of the `jadeTF` package and executes the ADMM algorithm described in (reference to paper). The parameters `theta0`, `u.alpha0` and `u.beta0` can be used to start the ADMM algorithm off at the solution for a nearby value of `gamma`. This ''warm start'' techinique can reduce the number of iterations to reach convergence and will be used when we run a sequence of fits using the `jade_path_planned` or `jade_path` functions.
+The `jade_admm` function is the workhorse of the `jadeTF` package and executes the ADMM algorithm described in (reference to paper). The parameters `theta0`, `u.alpha0`, `rho.alpha`, `u.beta0`, and `rho.beta` can be used to start the ADMM algorithm off at the solution for a nearby value of `gamma`. If you provide `u.alpha0` or `u.beta0` be sure to provide the corresponding step size. This ''warm start'' techinique can reduce the number of iterations to reach convergence and will be used when we run a sequence of fits using the `jade_path_planned` or `jade_path` functions.
 
 The function `get_separated_regions` can be used to produce a table listing regions with separation. The function provides two tables - one merged over partition types and one with partition types separated. In the case of $K=2$ these tables are thes same. The tables automatically include a "Chrom" and "Window" collumn which can be useful for large problems that are broken into many windows. The tables can also be written out to text files as .bed files.
 ```{r}
