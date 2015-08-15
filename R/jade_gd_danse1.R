@@ -56,6 +56,9 @@ jade_gd <- function(y, gamma, pos = NULL, scale.pos=NULL,
 
   metric <- match.arg(cv.metric)
 
+  if(any(is.na(y))) missing.data=TRUE
+    else missing.data <- FALSE
+
 	stopifnot(ord %in% c(0, 1, 2))
 	if(!is.null(var.wts) & !is.null(fit.var)) stop("Please provide only one of var.wts or fit.var")
 	if(class(y)=="numeric"){
@@ -174,7 +177,8 @@ jade_gd <- function(y, gamma, pos = NULL, scale.pos=NULL,
 		if(verbose) cat("lb0", lb0, "\n")
 		#Update Theta
 		tprev <- theta
-		theta <- theta_update_tf(y, duals, sds, lambda1, lambda2, sample.size, pos, ord)
+    if(missing.data) theta <- theta_update_tf_missing(y, duals, sds, lambda1, lambda2, sample.size, pos, ord, theta, 5)
+		  else theta <- theta_update_tf_complete(y, duals, sds, lambda1, lambda2, sample.size, pos, ord)
 		#Check obj and dual values
 		upper.bound <- obj_fct(y, theta, lambda1, lambda2, gamma, sample.size,
 		                       subset.wts, sds, var.wts, pos, ord)
@@ -251,11 +255,11 @@ jade_gd <- function(y, gamma, pos = NULL, scale.pos=NULL,
 #Minimize dual wrt thetas
 #For each j solve
 ###
-# n/2 || Ay - A\theta ||_2_^2 +  u\theta + lambda_1 || D\theta ||_1 + lambda_2 || \theta ||_1
+# n/2 || A(y - \theta) ||_2_^2 +  u\theta + lambda_1 || D\theta ||_1 + lambda_2 || \theta ||_1
 ###
-# 1/2 (\theta^T A^T A \theta - (2y^TA^TA\theta - 2u/n)\theta   )
-# 1/2 || (A^Ty - A^-1 u/n) - A\theta ||_2_^2 + lambda_1/n || D\theta ||_1 + lambda_2/n || \theta ||_1
-theta_update_tf <- function(y, duals, sds, lambda1, lambda2, sample.size, pos, ord){
+# 1/2 || A((y - A^-2 u/n) - \theta )||_2_^2 + lambda_1/n || D\theta ||_1 + lambda_2/n || \theta ||_1
+theta_update_tf_complete <- function(y, duals, sds, lambda1, lambda2, sample.size, pos, ord){
+  if(any(is.na(y))) stop("No missing values allowed.")
 	K <- dim(y)[2]
 	p <- dim(y)[1]
 
@@ -280,32 +284,15 @@ theta_update_tf <- function(y, duals, sds, lambda1, lambda2, sample.size, pos, o
 			}
 		}
 
-		nm <- which(!is.na(y[,j]))
-		new.y <- as.vector(weights[,j]*y[,j] -( u/(weights[,j]*sample.size[j]) ))
+		new.y <- as.vector(y[,j] -( u/(weights[,j]^2*sample.size[j]) ))
 		#cat(length(new.y),  ord, "\n")
 		new.lam1 <- lambda1[j]/sample.size[j]
-		if(all(weights[nm,j]==1)){
-			out <- genlasso:::trendfilter(y=new.y[nm], pos=pos[nm], ord=ord)
+		if(all(weights[,j]==1)){
+			out <- genlasso:::trendfilter(y=new.y, pos=pos, ord=ord)
 		}else{
-		  out <-  trendfilter_weights(y=new.y[nm], pos=pos[nm], ord=ord, wts=weights[nm,j])
+		  out <-  trendfilter_weights(y=new.y, pos=pos, ord=ord, wts=weights[,j])
 		}
-		co.nm <- coef.genlasso(out, lambda=new.lam1, type="primal")$beta
-
-		if(length(nm) < p){
-				co = .Call("tf_predict_R",
-                    sBeta = as.double(co.nm),
-                    sX = as.double(pos[nm]),
-                    sN = length(nm),
-                    sK = as.integer(ord),
-                    sX0 = as.double(pos),
-                    sN0 = length(pos),
-                    sNLambda = 1,
-                    sFamily = 0,
-                    sZeroTol = as.double(1e-11),
-                    package = "jadeTF")
-		}else{
-		  co <- co.nm
-		}
+		co <- coef.genlasso(out, lambda=new.lam1, type="primal")$beta
 
 		if(lambda2[j] > 0){
 		  co <- soft_threshold(co, lambda2[j]/(sample.size[j]))
@@ -316,3 +303,20 @@ theta_update_tf <- function(y, duals, sds, lambda1, lambda2, sample.size, pos, o
   return(fits)
 }
 
+theta_update_tf_missing <- function(y, duals, sds, lambda1, lambda2, sample.size, pos, ord, theta, n.iter){
+  miss <- which(is.na(y))
+  y.filled <- y
+  y.filled[miss] <- theta[miss]
+  sds.filled <- sds
+  sds.filled[nm] <- max(sds)
+
+  ct <- 1
+  while(ct <= n.iter){
+    theta <- theta_update_tf_complete(y.filled, duals, sds.filled, lambda1, lambda2, sample.size, pos, ord)
+    delta <- sum((y.filled[miss]-theta[miss])^2)
+    cat(delta, "\n")
+    y.filled[miss] <- theta[miss]
+    ct <- ct + 1
+  }
+  return(theta)
+}
