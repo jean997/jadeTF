@@ -2,6 +2,7 @@
 
 export(bs_var_tf)
 export(cv_err)
+export(cv_err_wts)
 export(cv_fit0)
 export(get_sep)
 export(get_separated_regions)
