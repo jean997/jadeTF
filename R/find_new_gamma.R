@@ -48,6 +48,11 @@ find_new_gamma <- function(l1.total, log.gammas, sep.total,
   #We are in the middle but the path isn't dense enough
   hole.idx <- which(-1*diff(lt) > 2*l1.gap)
   l1.target <- lt[hole.idx]-l1.gap #Possibly multiple targets
+  if(min(l1.total) > tol | min(sep.total) > 0){
+    if (all(l1.target > min(l1.total))){
+      l1.target <- c(l1.target, min(l1.total)/2)
+    }
+  }
   new.gamma <- project_new_gamma_smooth(l1.target=l1.target, lg.top=lg.top,
                                  l1.total=l1.total, log.gammas=log.gammas,
                                  l1.gap=l1.gap, buffer=buffer)
