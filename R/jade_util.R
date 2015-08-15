@@ -268,7 +268,18 @@ h <- function(x, p, pos, ord){
 
 #JADE Objective function for trend filtering problem
 #These are used by jade_gd
-
+obj_fct_wrapper <- function(jade.obj){
+  if(jade.obj$algorithm == "admm"){
+    lambda1=jade.obj$lambda
+    lambda2 = rep(0, length(lambda1))
+  }else{
+    lambda1=jade.obj$lambda1
+    lambda2=jade.obj$lambda2
+  }
+  obj.value <- obj_fct(jade.obj$y, jade.obj$fits, lambda1, lambda2, jade.obj$gamma, jade.obj$sample.size,
+          jade.obj$subset.wts, jade.obj$sds, jade.obj$var.wts, jade.obj$pos, jade.obj$ord)
+  return(obj.value)
+}
 obj_fct <-  function(y, theta, lambda1, lambda2, gamma, sample.size,
                      subset.wts, sds, var.wts, pos, ord){
 
