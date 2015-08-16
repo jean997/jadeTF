@@ -14,7 +14,7 @@ find_new_gamma <- function(l1.total, log.gammas, sep.total,
     #We haven't really started into the part of the path we care about
     if(verbose) cat("Top!\n")
     l1.target <- min(l1.total) - l1.gap #Only one target
-    new.gamma <- project_new_gamma_smooth(l1.target=l1.target, lg.top=lg.top,
+    new.gamma <- project_new_gamma_spline(l1.target=l1.target, lg.top=lg.top,
                                    l1.total=l1.total, log.gammas=log.gammas,
                                    l1.gap=l1.gap, buffer=buffer)
     if(new.gamma$warn){
@@ -53,7 +53,7 @@ find_new_gamma <- function(l1.total, log.gammas, sep.total,
       l1.target <- c(l1.target, min(l1.total)/2)
     }
   }
-  new.gamma <- project_new_gamma_smooth(l1.target=l1.target, lg.top=lg.top,
+  new.gamma <- project_new_gamma_spline(l1.target=l1.target, lg.top=lg.top,
                                  l1.total=l1.total, log.gammas=log.gammas,
                                  l1.gap=l1.gap, buffer=buffer)
   if(new.gamma$warn & (min(l1.total) < tol | min(sep.total) == 0)){
