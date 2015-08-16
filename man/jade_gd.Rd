@@ -9,7 +9,7 @@ jade_gd(y, gamma, pos = NULL, scale.pos = NULL, lambda1 = NULL,
   fit.var = NULL, var.wts = NULL, subset.wts = NULL, theta0 = NULL,
   duals0 = NULL, verbose = FALSE, sep.tol = 0.001, max.it = 1000,
   thresh = 1e-08, stepsize = NULL, eps = 0, cv.metric = c("mse", "abs",
-  "pois"), truncate.metric = 100, shift = NULL)
+  "pois"), truncate.metric = 100, shift = NULL, debug = FALSE)
 }
 \arguments{
 \item{y}{Data matrix of size p x K. May contain NA values but may not contain rows which are all NA.}
