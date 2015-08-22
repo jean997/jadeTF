@@ -52,6 +52,7 @@ partition_to_sep <- function(partition, K){
 	sep <- rep(1, K*(K-1)/2)
 	for(j in 1:length(grps)){
 		grp <- as.numeric(unlist(strsplit(grps[j], split=" ")))
+    if(length(grp) == 1) next
 		for(i in 1:(length(grp)-1)){
 			for(k in (i+1):length(grp)){
 				#cat(grp[i], grp[k], "\n")
