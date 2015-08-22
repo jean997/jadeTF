@@ -65,7 +65,8 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
         f <- pmin(f, max(data.range))
         f <- pmax(f, min(data.range))
       }
-      res.tab.sep$Partition[i] <- sep_to_partition(z.sep$score[i], K)
+      my.sep <- as.numeric(unlist(strsplit(z.sep$score[i], split=" ")))
+      res.tab.sep$Partition[i] <- sep_to_partition(my.sep, K)
       for(j in 1:(K-1)){
         for(l in (j+1):K){
           g <- f[,j]-f[,l]
