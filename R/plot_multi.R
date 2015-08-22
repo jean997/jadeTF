@@ -54,7 +54,8 @@ plot_data <- function(counts, reads, pos, ylim=c(0, 1), range=NULL){
 #' @export
 plot_jade <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
                        range=NULL, wsize=10, maxcov=Inf, take.log.cov=FALSE,
-                       maxwidth=3, minwidth=0.5,  ylim=NULL, sep.tab=NULL){
+                       maxwidth=3, minwidth=0.5,  ylim=NULL, sep.tab=NULL,
+                      ylab=NULL, xlab="Position"){
 
   if(!is.null(y)) plot.data=TRUE
 	  else plot.data=FALSE
@@ -145,10 +146,23 @@ plot_jade <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
 	  }
 	}
 	R <- h + scale_x_continuous(minor_breaks=pos) +
-	  ylim(ylim) + theme(legend.position="none",
-	                     #axis.title.x=element_blank(),
-	                     axis.title.y=element_blank(),
-	                     text=element_text(size=20)) +
-	  scale_size(range=c(minwidth, maxwidth)) + labs(x="Position")
+	  ylim(ylim) + scale_size(range=c(minwidth, maxwidth))
+	if(is.null(xlab) & is.null(ylab)){
+	  R <- R + theme(legend.position="none",
+	                 axis.title.x=element_blank(),
+	                 axis.title.y=element_blank(),
+	                 text=element_text(size=20))
+	}else if(is.null(xlab)){
+	  R <- R + theme(legend.position="none",
+	                 axis.title.x=element_blank(),
+	                 text=element_text(size=20)) + labs(y=ylab)
+	}else if(is.null(ylab)){
+	  R <- R + theme(legend.position="none",
+	                 axis.title.y=element_blank(),
+	                 text=element_text(size=20)) + labs(x=xlab)
+	}else{
+	  R <- R + theme(legend.position="none",
+	                 text=element_text(size=20)) + labs(x=xlab, y=ylab)
+	}
 	return(R)
 }
