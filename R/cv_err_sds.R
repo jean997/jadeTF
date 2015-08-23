@@ -92,7 +92,7 @@ cv_err_wts <- function(orig.path, cv.path.list=NULL,
 
 		cv.err <- unlist( lapply(path$JADE_fits, FUN=function(x, orig.y, orig.sds, test.idx){
 					sum(( (x$fits[test.idx]-orig.y[test.idx])/orig.sds[test.idx] )^2)
-					}, orig.y=orig.y, orig.sds=orig.sds, test.idx=test.idx))/n.test[i]
+					}, orig.y=orig.y, orig.sds=orig.sds, test.idx=test.idx))
 
 		cv.err.l1[i,] <- approx(x=path$l1.total[keep.fits[[(i+1)]]],
 		                        y=cv.err[keep.fits[[(i+1)]]],
@@ -102,8 +102,11 @@ cv_err_wts <- function(orig.path, cv.path.list=NULL,
 
 
 	err.l1 <- rep(NA, n.gamma)
-	err.l1[keep.fits[[1]]]<- colSums(cv.err.l1)
+	err.l1[keep.fits[[1]]]<- colSums(cv.err.l1)/sum(n.test)
 	err.se.l1 <- rep(NA, n.gamma)
+	for(i in 1:n.folds){
+	  cv.err.l1[i,] <- cv.err.l1[i,]/n.test[i]
+	}
 	err.se.l1[keep.fits[[1]]] <- apply(cv.err.l1, MARGIN=2, FUN=sd)/sqrt(n.folds)
 	cv.min.l1 <-  which.min(err.l1)
 	if(length(cv.min.l1) > 1){
