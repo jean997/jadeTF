@@ -6,6 +6,7 @@
 #' @import zoo
 #' @import plotrix
 #' @import IRanges
+#' @import ggplot2
 
 #Contains small utility functions
 

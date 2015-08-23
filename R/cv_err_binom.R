@@ -1,9 +1,10 @@
-#' Use cross validation paths to choose a value of gamma
+#' Use cross validation paths to choose a value of gamma for binomial data
 #'
 #' This function requires having a \code{jade_path} object for the original data
 #' and for data with missing folds. See \code{\link{cv_fit0}}.
 #'
 #' @param orig.path Either a path object or a file containing a \code{jade_path} object.
+#' @param reads A matrix of reads corresponding to the data.
 #' @param cv.path.list Either a list of \code{jade_path} objects or a vector of file names
 #' containing \code{jade_path} objects for the cross validation data sets.
 #' @param use.converged.only Only use fits which have converged.

@@ -6,7 +6,8 @@
 \usage{
 plot_jade(fits, pos, y = NULL, reads = NULL, cols = NULL, range = NULL,
   wsize = 10, maxcov = Inf, take.log.cov = FALSE, maxwidth = 3,
-  minwidth = 0.5, ylim = NULL, sep.tab = NULL)
+  minwidth = 0.5, ylim = NULL, sep.tab = NULL, ylab = NULL,
+  xlab = "Position")
 }
 \arguments{
 \item{fits}{A p by K matrix of fitted values (the \code{fits}) element of a JADE fit object.}
