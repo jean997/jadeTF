@@ -98,7 +98,7 @@ cv_err_binom <- function(orig.path, reads, cv.path.list=NULL,
 		      p[p <= 0] <- margin
 					sum( -orig.y[test.idx]*log(p[test.idx]) - (orig.reads[test.idx]-orig.y[test.idx])*log(1-p[test.idx]))
 
-					}, orig.y=orig.y, orig.reads=orig.reads, test.idx=test.idx, margin=margin))/n.test[i]
+					}, orig.y=orig.y, orig.reads=orig.reads, test.idx=test.idx, margin=margin))
 
 		cv.err.l1[i,] <- approx(x=path$l1.total[keep.fits[[(i+1)]]],
 		                        y=cv.err[keep.fits[[(i+1)]]],
@@ -108,8 +108,11 @@ cv_err_binom <- function(orig.path, reads, cv.path.list=NULL,
 
 
 	err.l1 <- rep(NA, n.gamma)
-	err.l1[keep.fits[[1]]]<- colSums(cv.err.l1)
+	err.l1[keep.fits[[1]]]<- colSums(cv.err.l1)/sum(n.test)
 	err.se.l1 <- rep(NA, n.gamma)
+	for(i in 1:n.folds){
+	  cv.err.l1[i,] <- cv.err.l1[i,]/n.test[i]
+	}
 	err.se.l1[keep.fits[[1]]] <- apply(cv.err.l1, MARGIN=2, FUN=sd)/sqrt(n.folds)
 	cv.min.l1 <-  which.min(err.l1)
 	if(length(cv.min.l1) > 1){
