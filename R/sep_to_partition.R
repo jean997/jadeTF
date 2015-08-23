@@ -1,6 +1,6 @@
 #Utility functions for dealing with partitions
 
-sep_to_partition <- function(sep, K){
+sep_to_partition <- function(sep, K, data=NULL){
 	if(all(sep==0)){
 		partition <- paste(1:K, collapse=" ")
 		partition <- paste("(", partition, ")", sep="")
@@ -30,6 +30,30 @@ sep_to_partition <- function(sep, K){
 			if(!found) groups[[j+1]] <- p
 		}
 	}
+  for(i in 1:K){
+    if(! i %in% pairs){
+      found <- FALSE
+      for(j in 1:length(groups)){
+        if(i %in% groups[[j]]) found <- TRUE
+      }
+      if(!found) groups[[j+1]] <- c(i)
+    }
+  }
+
+  #Sort groups
+  if(!is.null(data)){
+    avg.value <- rep(NA, length(groups))
+    for(j in 1:length(groups)){
+      p <- groups[[j]][1]
+      avg.value[j] <- mean(data[,p], na.rm=TRUE)
+    }
+    o <- order(avg.value)
+    groups.sorted <- list()
+    for(j in 1:length(groups)){
+      groups.sorted[[j]] <- groups[[o[j]]]
+    }
+    groups <- groups.sorted
+  }
 	partition <- ""
 	for(j in 1:length(groups)){
 		pt <- paste("(", paste( groups[[j]], collapse=" "), ")", sep="")
