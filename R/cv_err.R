@@ -103,7 +103,7 @@ cv_err <- function(orig.path, cv.path.list=NULL,
 	err.l1 <- rep(NA, n.gamma)
 	err.l1[keep.fits[[1]]]<- colSums(cv.err.l1)
 	err.se.l1 <- rep(NA, n.gamma)
-	err.se.l1[keep.fits[[1]]] <- sqrt(apply(cv.err.l1, MARGIN=2, FUN=sd)/n.folds)
+	err.se.l1[keep.fits[[1]]] <- apply(cv.err.l1, MARGIN=2, FUN=sd)/sqrt(n.folds)
 	cv.min.l1 <-  which.min(err.l1)
 	cv.1se.l1.w <-  orig.path$l1.total[which(err.l1 < (err.l1[cv.min.l1] + err.se.l1[cv.min.l1]))]
 	cv.1se.l1 <- which(orig.path$l1.total==min(cv.1se.l1.w))

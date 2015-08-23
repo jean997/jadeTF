@@ -22,8 +22,8 @@
 #'  standard error rule cross validation error.}
 #' }
 #' @export
-cv_err_wts <- function(orig.path, cv.path.list=NULL,
-                       use.converged.only=TRUE, control.l1=TRUE){
+cv_err_binom <- function(orig.path, reads, cv.path.list=NULL,
+                       use.converged.only=TRUE, control.l1=TRUE, margin=0.01){
 
   if(class(orig.path)=="character"){
     orig.path.file <- orig.path
@@ -35,7 +35,8 @@ cv_err_wts <- function(orig.path, cv.path.list=NULL,
   n.folds=length(cv.path.list)
 
 	#Path with full data
-	orig.y <- orig.path$JADE_fits[[1]]$y
+	orig.y <- orig.path$JADE_fits[[1]]$y*reads
+	orig.reads <- reads
 	orig.sds <- orig.path$JADE_fits[[1]]$sds
 	orig.na <- which(is.na(orig.y))
 	K <- dim(orig.y)[2]
@@ -90,9 +91,13 @@ cv_err_wts <- function(orig.path, cv.path.list=NULL,
 		test.idx <- cv.na[!cv.na %in% orig.na]
 		n.test <- c(n.test, length(test.idx))
 
-		cv.err <- unlist( lapply(path$JADE_fits, FUN=function(x, orig.y, orig.sds, test.idx){
-					sum(( (x$fits[test.idx]-orig.y[test.idx])/orig.sds[test.idx] )^2)
-					}, orig.y=orig.y, orig.sds=orig.sds, test.idx=test.idx))/n.test[i]
+		cv.err <- unlist( lapply(path$JADE_fits, FUN=function(x, orig.y, orig.reads, test.idx, margin){
+		      p <- x$fits
+		      p[ p >= 1] <- 1-margin
+		      p[p <= 0] <- margin
+					sum( -orig.y[test.idx]*log(p[test.idx]) - (orig.reads[test.idx]-orig.y[test.idx])*log(1-p[test.idx]))
+
+					}, orig.y=orig.y, orig.reads=orig.reads, test.idx=test.idx, margin=margin))/n.test[i]
 
 		cv.err.l1[i,] <- approx(x=path$l1.total[keep.fits[[(i+1)]]],
 		                        y=cv.err[keep.fits[[(i+1)]]],
