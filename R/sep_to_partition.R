@@ -7,7 +7,13 @@ sep_to_partition <- function(sep, K, data=NULL){
 		return(partition)
 	}
 	if(all(sep==1)){
-		partition <- paste(1:K, collapse=")(")
+	  f(!is.null(data)){
+	    avg.value <- colMeans(data)
+	    o <- order(avg.value)
+	    partition <- paste((1:K)[o], collapse=")(")
+	  }else{
+	     partition <- paste(1:K, collapse=")(")
+	  }
 		partition <- paste("(", partition, ")", sep="")
 		return(partition)
 	}
