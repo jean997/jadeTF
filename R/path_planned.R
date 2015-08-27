@@ -3,8 +3,11 @@
 #Hard stop means go all the way to log.gamma.stop and don't go past even if path isn't done
 #' Fit JADE at a sequence of gamma values.
 #' @description This function requires having previously fit the data at \code{gamma}=0. JADE will be fit
-#' at a serries of \code{gamma} values evenly spaced on the log scale. The spacing is determined by
-#' a starting point, a stopping point and the number of fits desired.
+#' at a serries of \code{gamma} values evenly spaced on the log scale. There are three ways
+#' to specify which values of \code{gamma} will be fit:
+#' 1. Specify \code{log.gamma.start}, \code{log.gamma.stop} and \code{n.fits}
+#' 1. Specify \code{log.gamma.start} and \code{step.size}
+#' 1. Specify \code{gammas}
 #'
 #' The start and end points should be pretty good guesses but don't need to be exact.
 #' If \code{log.gamma.start} is too large \code{jade_path_planned} will back up until it finds a value of
@@ -26,10 +29,12 @@
 #' @param out.file Name of a file to save the results to.
 #' @param log.gamma.start Starting value of \code{log10(gamma)}.
 #' @param n.fits Desired number of fits along the path. Actual results may vary.
-#' \code{n.fits} can only be missing if \code{step.size} is provided.
+#' \code{n.fits} can only be missing if \code{step.size}  or \code{gammas} are provided.
 #' @param log.gamma.stop Speculative stopping point. If \code{log.gamma.stop} and \code{n.fits}
 #' are provided \code{step.size = (log.gamma.stop-log.gamma.start)/n.fits}.
 #' @param step.size Alternative to specifying \code{log.gamma.stop} and \code{n.fits}
+#' @param gammas Alternative to providing start/stop etc - just provide an exact list of all the
+#' \code{gamma} values to fit.
 #' @param temp.file Name a temp file. If missing will use a default based on \code{out.file}.
 #' This file will be deleted at the end.
 #' @param max.it Maximum number of jade iterations.
@@ -52,12 +57,13 @@
 #'   were calculated}
 #' }
 #' @export
-jade_path_planned <- function(fit0, out.file, log.gamma.start,
+jade_path_planned <- function(fit0, out.file, log.gamma.start=NULL,
                               n.fits=NULL, log.gamma.stop=NULL, step.size=NULL,
+                              gammas=NULL, return.object=TRUE,
                               tol=1e-3, verbose = TRUE,
                               temp.file=NULL, max.it=10000, log.gamma.max=20,
                               restart.file=NULL, hard.stop=FALSE,
-                              adjust.rho.alpha=FALSE){
+                              adjust.rho.alpha=TRUE){
 
 
 	if(is.null(temp.file)){
@@ -65,8 +71,17 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
 		temp.file <- paste(z, "_temp.RData", sep="")
 	}
 
-  if((is.null(log.gamma.stop) | is.null(n.fits) )& is.null(step.size)){
-    stop("Specify either log.gamma.stop and n.fits or specify step.size.")
+  #Arguments
+  if(is.null(log.gamma.start) & is.null(gammas)){
+    stop("Invalid arguments to jade_path_planned.")
+  }else if(!is.null(log.gamma.start)){
+    even.spacing=TRUE
+  }else{
+    even.spacing=FALSE
+    max.it = length(gammas)+1
+  }
+  if(even.spacing & (is.null(log.gamma.stop) | is.null(n.fits) )& is.null(step.size)){
+    stop("Invalid arguments to jade_path_planned.")
   }else if(is.null(step.size)){
     step.size <- (log.gamma.stop-log.gamma.start)/n.fits
   }
@@ -79,7 +94,8 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
   sep0 <- get_sep(fit0$fits, tol)
 
   #Set up
-	log.gammas <- c(-Inf, log.gamma.start)
+  if(even.spacing) log.gammas <- c(-Inf, log.gamma.start)
+    else log.gammas <- c(-Inf, gammas[1])
 
 	p <- dim(fit0$y)[1]
 	K <- dim(fit0$y)[2]
@@ -180,22 +196,30 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
 		converged[i] <- fit$converged
 
 		#Find the next gamma to evaluate
-		if(!hard.stop){
+		if(!hard.stop & even.spacing){
 			if((log.gammas[i] - log.gamma.start) < 2*step.size & sep.total[i] < (0.95*sep.total0)){
 			  #Near the top - check if we started too far in:
 			  new.gamma <- min(log.gammas[-1])-step.size
 			}else if(sep.total[i] == 0 | l1.total[i] < tol | log.gammas[i] >= log.gamma.max){
 			  #Time to stop
 			  done <- TRUE
-		  	new.gamma <- max(log.gammas[-1]) + step.size
+		  	break
 			}else{
 				new.gamma <- max(log.gammas[-1]) + step.size
 			}
-		}else{
+		}else if(even.spacing){
 			new.gamma <- max(log.gammas[-1]) + step.size
 			if(log.gammas[i] > log.gamma.stop){
 				done <- TRUE
+				break
 			}
+		}else{
+		  if(i > length(gammas) |  sep.total[i]==0){
+		    done <- TRUE
+		    break
+		  }else{
+		    new.gamma <- gammas[i]
+		  }
 		}
 		#Find the fit with the closest gamma to the next value.
 		#Use solutions from this fit as new theta0 value.
@@ -229,7 +253,8 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start,
 	if(verbose) cat("Done!\n")
 	save(path, file=out.file)
 	unlink(temp.file)
-	return(path)
+	if(return.object) return(path)
+	  else return(0)
 }
 
 

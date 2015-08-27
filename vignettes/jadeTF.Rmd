@@ -87,9 +87,9 @@ Both are initiated with a fit at `gamma=0`. `jade_path_planned` will run a serie
 
 Running a full path can take a while. Partial paths are saved to temp files that can be specified and the full path is always saved to an output file as well as returned. The code below takes about 110 minutes on a standard laptop. 
 ```{r, eval=FALSE}
-path <- jade_path(fit0 = fit0, n.fits = 100, out.file = "example_path.RData")
+system.time(path <- jade_path(fit0 = fit0, n.fits = 100, out.file = "example_path.RData")
 ```
-The function `jade_path` doesn't require any knowledge about what the critical values of `gamma` at which the curves are totally fused at the high end or just begin to fuse at the low end. In its current implementation `jade_path` can be slow and fit many more than the desired number of fits - for example the above code results in 222 fits rahter than 100. There is an alternate function `jade_path_planned` which requres inputting a starting and approximate stopping point but can be faster if the points provided are good guesses. The code below only takes 30 minutes and fits 102 fits but has the advantage of knowing where to start and stop.
+The function `jade_path` doesn't require any knowledge about what the critical values of `gamma` at which the curves are totally fused at the high end or just begin to fuse at the low end. In its current implementation `jade_path` can be slower and fit many more than the desired number of fits - for example the above code takes 14 minutes and results in 109 fits rahter than 100. There is an alternate function `jade_path_planned` which requres inputting a starting and approximate stopping point but can be faster if the points provided are good guesses. The code below only takes 12 minutes and fits 102 fits but has the advantage of knowing where to start and stop.
 ```{r, eval=FALSE}
 path.planned <- jade_path_planned(fit0 = fit0, 
                                   log.gamma.start = -1, log.gamma.stop= 0.1, 
