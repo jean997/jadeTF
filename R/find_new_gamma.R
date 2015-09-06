@@ -36,7 +36,7 @@ find_new_gamma <- function(l1.total, log.gammas, sep.total,
     }else{
       #If the path is dense but we didn't get close to the bottom
       l1.target <- min(l1.total)/2 #Only one target
-      new.gamma <- project_new_gamma_smooth(l1.target=l1.target, lg.top=lg.top,
+      new.gamma <- project_new_gamma_spline(l1.target=l1.target, lg.top=lg.top,
                                      l1.total=l1.total, log.gammas=log.gammas,
                                      l1.gap=l1.gap, buffer=buffer)
       new.gamma <- new.gamma$new.gamma
