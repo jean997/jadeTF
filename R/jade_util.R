@@ -12,7 +12,11 @@
 
 #Default weights
 default_wts <- function(p, K){
-	wts <- list()
+  wts <- list()
+  if(K==1){
+    wts[[1]] <- rep(1, p)
+    return(wts)
+  }
   for(j in 1:(K-1)){
     wts[[j]] <- list()
     for(i in (j+1):K){

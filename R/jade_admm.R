@@ -71,6 +71,7 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
   if(class(y)=="numeric"){
     p <- length(y)
     y <- matrix(y, nrow=p)
+    if(!is.null(sds)) sds <- matrix(sds, nrow=p)
   }
   p <- dim(y)[1] #Number of sites
   K <- dim(y)[2] #Number of groups
