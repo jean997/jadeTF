@@ -87,7 +87,7 @@ Both are initiated with a fit at `gamma=0`. `jade_path_planned` will run a serie
 
 Running a full path can take a while. Partial paths are saved to temp files that can be specified and the full path is always saved to an output file as well as returned. The code below takes about 110 minutes on a standard laptop. 
 ```{r, eval=FALSE}
-system.time(path <- jade_path(fit0 = fit0, n.fits = 100, out.file = "example_path.RData")
+path <- jade_path(fit0 = fit0, n.fits = 100, out.file = "example_path.RData"
 ```
 The function `jade_path` doesn't require any knowledge about what the critical values of `gamma` at which the curves are totally fused at the high end or just begin to fuse at the low end. In its current implementation `jade_path` can be slower and fit many more than the desired number of fits - for example the above code takes 14 minutes and results in 109 fits rahter than 100. There is an alternate function `jade_path_planned` which requres inputting a starting and approximate stopping point but can be faster if the points provided are good guesses. The code below only takes 12 minutes and fits 102 fits but has the advantage of knowing where to start and stop.
 ```{r, eval=FALSE}
@@ -100,12 +100,14 @@ Here we use $k$-fold cross validation to select a value of $\gamma$. This involv
 
 
 ### Fit at $\gamma = 0$ for data with missing folds.
-TThee `cv_fit0` function uses a previous fit on the entire data at `gamma=0` and performs an analogus fit on the same data set with missing values introduced. To fit the first fold when we are planning on five fold cross validaiont we would use
+The `cv_fit0` function uses a previous fit on the entire data at `gamma=0` and performs an analogus fit on the same data set with missing values introduced. To fit the first fold when we are planning on five fold cross validaiont we would use
 ```{r, eval=FALSE}
 fit0.1 <- cv_fit0(orig.fit=fit0, n.folds=5, which.fold=1)
 ```
-To fit all the folds sequentially `which.fold` could be set to `1:5` but if multiple processors are available these can be run simultaneously.
-
+To fit all the folds sequentially `which.fold` could be set to `1:5` but if multiple processors are available these can be run simultaneously. The following runs each fold sequentially and saves the fit to a file named "f0.i.RData" where i is the fold.
+```{r, eval=FALSE}
+cv_fit0(orig.fit=fit0, n.folds=5, which.fold=1:5, save.prefix="f0", return.objects=FALSE)
+```
 ### Fit paths for each fold
 For only the first fold we would run 
 ```{r, eval=FALSE}
@@ -121,5 +123,26 @@ cv <- cv_err(orig.path=path, cv.path.list=cv.path.list)
 
 ## When $K=2$, improve fits by including the estimated variance of the smoothed profiles.
 
-```{r}
+Estimate the variance of a smoothed fit to each group by bootstrapping:
+```{r, eval=FALSE}
+v1 <- bs_var_tf(Y=y1, lambda=fit0$lambda[1], sample.size=10)
+v2 <- bs_var_tf(Y=y2, lambda=fit0$lambda[2], sample.size=15)
+fit_var <- cbind(v1$var, v2$var)
+```
+
+Follow the same procedure as before -- fit first at `gamma = 0` and then for a grid of gamma values.
+```{r, eval=FALSE}
+fit0_wts <- jade_admm(y, gamma=0, ord=2, sample.size = c(10, 15), fit.var=fit_var)
+path_wts <- jade_path(fit0 = fit0_withwts, n.fits = 100, out.file = "example_path_wts.RData", log.gamma.min=-1)
+path_planned_wts <- jade_path_planned(fit0=fit0_withwts, out.file="example_path_planned_wts.RData", log.gamma.start=0.05, log.gamma.stop=2.3, n.fits=100)
+```
+
+Cross validation for the weighted analysis:
+```{r, eval=FALSE}
+cv_fit0(orig.fit=fit0_wts, n.folds=5, which.fold=1:5, save.prefix="f0_wts", return.objects=FALSE)
+```
+```{r, eval=FALSE}
+for(i in 1:5){
+  path.cv <- jade_path(fit0 = paste0("f0_wts.", i, ".RData"), n.fits = 100, out.file = paste0("example_path_wts.", i, ".RData"))
+}
 ```
