@@ -1,5 +1,6 @@
 
-plot_data <- function(counts, reads, pos, ylim=c(0, 1), range=NULL){
+plot_data <- function(counts, reads, pos, ylim=c(0, 1),
+                      range=NULL, xlab="Position", ylab="Methylation Proportion"){
   if(!is.matrix(counts)){
 				K=1
 				p <- length(counts)
@@ -34,10 +35,9 @@ plot_data <- function(counts, reads, pos, ylim=c(0, 1), range=NULL){
 			h <- h + geom_point(aes_string(x="pos", y=paste("y", j, sep=""),
 			                               size=paste("r", j, sep="")), col=cols[j], alpha=1)
   }
-  return(h + scale_size_area() + ylim(ylim)+ theme(legend.position="none",
-                                                   axis.title.x=element_blank(),
-                                                   axis.title.y=element_blank(),
-                                                   text=element_text(size=20)))
+  return(h + scale_size_area() + ylim(ylim)+ labs(y=ylab, x=xlab) + theme(legend.position="none",
+                                                   text=element_text(size=20))
+         )
 }
 
 #' Plot a JADE fit
@@ -55,7 +55,7 @@ plot_data <- function(counts, reads, pos, ylim=c(0, 1), range=NULL){
 plot_jade <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
                        range=NULL, wsize=10, maxcov=Inf, take.log.cov=FALSE,
                        maxwidth=3, minwidth=0.5,  ylim=NULL, sep.tab=NULL,
-                      ylab=NULL, xlab="Position"){
+                      ylab=NULL, xlab="Position", bg.color="blue"){
 
   if(!is.null(y)) plot.data=TRUE
 	  else plot.data=FALSE
@@ -125,13 +125,7 @@ plot_jade <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
 
 	#Background colors
 	if(!is.null(sep.tab)){
-	  m.lower <- sep.tab$Start
-		m.upper <- sep.tab$Stop
-		M <- data.frame(m.lower, m.upper)
-		names(M) <- c("m.lower", "m.upper")
-
-		h <- h + geom_rect(data=M, aes(xmin=m.lower,xmax=m.upper,ymin=-Inf,ymax=Inf),
-		                   fill="blue", alpha=0.2)
+		h <- h + gg_sep_rect(sep.tab, color = bg.color, alpha=0.2)
 	}
 
 	for(j in 1:K){
@@ -166,3 +160,15 @@ plot_jade <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
 	}
 	return(R)
 }
+
+
+gg_sep_rect <- function(sep.tab, color="blue", alpha=0.2){
+  m.lower <- sep.tab$Start
+  m.upper <- sep.tab$Stop
+  M <- data.frame(m.lower, m.upper)
+  names(M) <- c("m.lower", "m.upper")
+
+ return(geom_rect(data=M, aes(xmin=m.lower,xmax=m.upper,ymin=-Inf,ymax=Inf),
+                     fill=color, alpha=alpha))
+}
+
