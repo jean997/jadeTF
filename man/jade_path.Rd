@@ -7,7 +7,7 @@
 jade_path(fit0, n.fits, out.file, temp.file = NULL, max.it = 10000,
   log.gamma.min = -3, log.gamma.max = 20, start.step = 0.03,
   tol = 0.001, max.fits = 10 * n.fits, buffer = 0.001,
-  restart.file = NULL, verbose = TRUE, adjust.rho.alpha = FALSE)
+  restart.file = NULL, verbose = TRUE, adjust.rho.alpha = TRUE)
 }
 \arguments{
 \item{fit0}{Either a jade object or a file containing a jade object produced by fitting with \code{gamma=0}}

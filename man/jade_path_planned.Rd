@@ -4,10 +4,11 @@
 \alias{jade_path_planned}
 \title{Fit JADE at a sequence of gamma values.}
 \usage{
-jade_path_planned(fit0, out.file, log.gamma.start, n.fits = NULL,
-  log.gamma.stop = NULL, step.size = NULL, tol = 0.001, verbose = TRUE,
-  temp.file = NULL, max.it = 10000, log.gamma.max = 20,
-  restart.file = NULL, hard.stop = FALSE, adjust.rho.alpha = FALSE)
+jade_path_planned(fit0, out.file, log.gamma.start = NULL, n.fits = NULL,
+  log.gamma.stop = NULL, step.size = NULL, gammas = NULL,
+  return.object = TRUE, tol = 0.001, verbose = TRUE, temp.file = NULL,
+  max.it = 10000, log.gamma.max = 20, restart.file = NULL,
+  hard.stop = FALSE, adjust.rho.alpha = TRUE)
 }
 \arguments{
 \item{fit0}{Either a jade object or a file containing a jade object produced by fitting with \code{gamma=0}}
@@ -17,12 +18,15 @@ jade_path_planned(fit0, out.file, log.gamma.start, n.fits = NULL,
 \item{log.gamma.start}{Starting value of \code{log10(gamma)}.}
 
 \item{n.fits}{Desired number of fits along the path. Actual results may vary.
-\code{n.fits} can only be missing if \code{step.size} is provided.}
+\code{n.fits} can only be missing if \code{step.size}  or \code{gammas} are provided.}
 
 \item{log.gamma.stop}{Speculative stopping point. If \code{log.gamma.stop} and \code{n.fits}
 are provided \code{step.size = (log.gamma.stop-log.gamma.start)/n.fits}.}
 
 \item{step.size}{Alternative to specifying \code{log.gamma.stop} and \code{n.fits}}
+
+\item{gammas}{Alternative to providing start/stop etc - just provide an exact list of all the
+\code{gamma} values to fit.}
 
 \item{temp.file}{Name a temp file. If missing will use a default based on \code{out.file}.
 This file will be deleted at the end.}
@@ -53,8 +57,11 @@ are saved to a temporary file along the way. The path objects is a list with sev
 }
 \description{
 This function requires having previously fit the data at \code{gamma}=0. JADE will be fit
-at a serries of \code{gamma} values evenly spaced on the log scale. The spacing is determined by
-a starting point, a stopping point and the number of fits desired.
+at a serries of \code{gamma} values evenly spaced on the log scale. There are three ways
+to specify which values of \code{gamma} will be fit:
+1. Specify \code{log.gamma.start}, \code{log.gamma.stop} and \code{n.fits}
+1. Specify \code{log.gamma.start} and \code{step.size}
+1. Specify \code{gammas}
 
 The start and end points should be pretty good guesses but don't need to be exact.
 If \code{log.gamma.start} is too large \code{jade_path_planned} will back up until it finds a value of
