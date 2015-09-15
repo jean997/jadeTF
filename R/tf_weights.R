@@ -22,7 +22,7 @@ trendfilter_weights <- function(y, pos, wts=NULL, ord=0, approx=FALSE, maxsteps=
   if (!is.numeric(y)) stop("y must be numeric.")
   if (any(diff(pos)==0)) stop("pos must contain distinct values.")
 
-  if(any(wts==0)) stop("All wts must be non-zero.")
+  if(any(wts<=0)) stop("All wts must be positive.")
   if(is.null(wts)){
     #Equivalent to trendfilter with no X. This code is straight out of genlasso package
     n = length(y)
