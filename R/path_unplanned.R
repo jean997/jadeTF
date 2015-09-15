@@ -118,10 +118,13 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
         log.gammas <- log.gammas[-i]
       }else{
 			  #Find next gamma value
-			  l1.top <- min(l1.total[sep.total >= sep.total0])
+        if(all(sep.total[-1] < sep.total0)) sep.total0 <- sep.total[2]
+			  l1.top <- min(l1.total[sep.total >= sep.total0 & is.finite(log.gammas)])
 			  l1.gap <- l1.top/n.fits
 			  lg.top <- max(log.gammas[sep.total >= sep.total0])
+			  if(!is.finite(lg.top)) lg.top <- min(log.gammas[-1])
 			  keep.fits <- which(l1.total <= l1.total0 & is.finite(log.gammas))
+			  if(length(keep.fits) < 6) keep.fits <- which(is.finite(log.gammas))
 			  new.gamma <- find_new_gamma(l1.total=l1.total[keep.fits], sep.total=sep.total[keep.fits],
 			                            log.gammas=log.gammas[keep.fits], start.step=start.step,
 			                            l1.gap=l1.gap, l1.top=l1.top,
@@ -179,12 +182,16 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 		converged[i] <- fit$converged
 
 
+		if(i == 2 & sep.total[i] < sep.total0){
+		  cat("Warning: May need to start path earlier")
+		  sep.total0 <- sep.total[i]
+		}
 		#Update the gap size
 		#We don't care about the density of the path when sep.total >= sep.total0.
 		#l1.top is the smallest value of l1.total achieved while the profiles are
 		#still as separated as they are with no penalty.
 		#We want a dense path between l1.top and 0
-		l1.top <- min(l1.total[sep.total >= sep.total0])
+		l1.top <- min(l1.total[sep.total >= sep.total0 & is.finite(log.gammas)])
 		l1.gap <- l1.top/n.fits
 		lg.top <- max(log.gammas[sep.total >= sep.total0])
 
