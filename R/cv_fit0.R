@@ -40,6 +40,7 @@ cv_fit0 <- function(orig.fit, n.folds=5, which.fold=1:n.folds, data.file=NULL,
 
 	p <- dim(orig.fit$y)[1]
 	K <- dim(orig.fit$y)[2]
+  ord <- orig.fit$ord
 
 	out <- list()
 	out.ct <- 1
@@ -48,6 +49,8 @@ cv_fit0 <- function(orig.fit, n.folds=5, which.fold=1:n.folds, data.file=NULL,
 		non.missing <- which(!is.na(orig.fit$y[,j]))
 		pj <- length(non.missing)
  		folds[non.missing,j] <- ((rep(1:n.folds, ceiling(pj/n.folds))[1:pj] + j ) %% n.folds ) + 1
+ 		folds[non.missing[1:(ord+1)], j] <- 0
+ 		folds[non.missing[(pj-ord):pj], j] <- 0
  	}
 
 	out <- list()
