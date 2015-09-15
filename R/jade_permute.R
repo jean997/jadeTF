@@ -55,13 +55,13 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
         Yi <- Y.perm[, grp.start[i]:grp.stop[i]]
         if(!is.null(READS)) Ri <- READS.perm[, grp.start[i]:grp.stop[i]]
           else Ri <- NULL
-        fit.var[,i] <- bs_var_tf(Yi, lambda=fit0$lambda[i], sample.size=sample.size[i],
+        fit.var[,i] <- bs_var_tf(Y=Yi, lambda=fit0$lambda[i], sample.size=sample.size[i],
                             sd.type=sd.type, READS=Ri,
                             pos=fit0$pos, scale.pos=fit0$scale.pos, ord=fit0$ord,
                             n.rep=n.rep.fit.var)
       }
     }else{
-      fit.var=NULL
+      fit.var=fit0$fit.var
     }
 
     #Fit 0
@@ -69,13 +69,36 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
                      lambda=fit0$lambda, sample.size=sample.size, ord=fit0$ord,
                      sds=sds.perm, fit.var=fit.var)
 
-    fn <- paste0(save.prefxi, ".perm", i, ".RData")
-    p <- jade_path_planned(fit0.perm, out.file=fn,
+    fn <- paste0(save.prefix, ".perm", i, ".RData")
+    path.perm <- jade_path_planned(fit0.perm, out.file=fn,
                                   gammas=gammas, return.object=TRUE,
                                   tol=tol, verbose = TRUE,
                                   adjust.rho.alpha=TRUE)
   }
 }
+
+jade_permute_results <- function(save.prefix, orig.gammas, n.perm, new.tol=NULL){
+  i <- 1
+  sep.total <- matrix(nrow=length(orig.gammas), ncol=n.perm)
+  while(i <=n.perm){
+    cat(i, " .. ")
+    fn <- paste0(save.prefix, ".perm", i, ".RData")
+    path.perm <- getobj(fn)
+    if(new.tol){
+      s <- get_sep_total(path.perm, new.tol=new.tol)
+    }else{
+      s <- path.perm$sep.total
+    }
+    if(!min(s) == 0) cat("Warning: Path may be incomplete.\n")
+    my.idx <- match(path.perm$gammas, orig.gammas)
+    if(length(my.idx) == length(path.perm$gammas)) cat("Warning: Gammas may not match correctly")
+    sep.total[my.idx, i] <- s
+    sep.total[orig.gammas > max(path.perm$gammas), i] <- 0
+  }
+  cat("\n")
+  return(sep.total)
+}
+
 
 binom.func <- function(Y, READS){
   y <- rowSums(Y)/rowSums(READS)
@@ -84,7 +107,7 @@ binom.func <- function(Y, READS){
   return(list("y"=y, "sds"=sds))
 }
 
-poisson.sd.func <- function(Y){
+poisson.func <- function(Y){
   n <- dim(Y)[2]
   y_total <- rowSums(Y)
   y <- y_total/n
