@@ -4,18 +4,19 @@
 \alias{bs_var_tf}
 \title{Estimate variance of a trendfiltering fit by bootstrapping}
 \usage{
-bs_var_tf(Y, lambda, sample.size, READS = NULL, sds = NULL,
-  calc.sds = TRUE, pos = NULL, scale.pos = NULL, ord = 2, n.rep = 100)
+bs_var_tf(Y, lambda, sds = NULL, READS = NULL, sd.type = c("Equal",
+  "Binomial", "Poisson"), calc.sds = TRUE, pos = NULL, scale.pos = NULL,
+  ord = 2, n.rep = 100)
 }
 \arguments{
 \item{Y}{A matrix of complete (not average) data for one group.}
 
+\item{sds}{A matrix of estimated standard deviations of \code{Y}. If missing
+observations are assumed to have equal variance.}
+
 \item{READS}{A matrix of reads corresponding to \code{Y} (Optional). If \code{READS} is provided,
 the elements in \code{Y} are assumed to be binomial observations and \code{sds} will be
 calculated unless \code{calc.sds=FALSE}}
-
-\item{sds}{A matrix of estimated standard deviations of \code{Y}. If missing
-observations are assumed to have equal variance.}
 
 \item{pos}{Vector of positions corresponding to the rows of \code{Y}}
 
