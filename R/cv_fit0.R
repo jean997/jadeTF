@@ -42,8 +42,6 @@ cv_fit0 <- function(orig.fit, n.folds=5, which.fold=1:n.folds, data.file=NULL,
 	K <- dim(orig.fit$y)[2]
   ord <- orig.fit$ord
 
-	out <- list()
-	out.ct <- 1
 	folds <- matrix(0, nrow=p, ncol=K)
  	for(j in 1:K){
 		non.missing <- which(!is.na(orig.fit$y[,j]))
