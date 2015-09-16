@@ -181,6 +181,21 @@ get_sep <- function(fits, tol){
 	return(sep)
 }
 
+#' Recalculate sep.total for a path that has already been run
+#' @param path Path of JADE fits
+#' @param tol Tolerance for determining separation
+#' @return A vector of same length as path$gammas
+#' @export
+get_sep_total <- function(path, tol){
+  sep.total <- rep(NA, length(path$JADE_fits))
+  sep.total[1] <- sum( unlist(get_sep(path$JADE_fits[[1]]$fits, tol=tol)))
+  s <- unlist( lapply(path$JADE_fits[-1],  FUN = function(f){
+    sep <- sum(unlist(get_sep(f$beta, tol=tol)))
+    return(sep)}))
+  sep.total[-1] <- s
+  return(sep.total)
+}
+
 #' Determine which pairs of sites are separated from a jade_gd object.
 #' @param obj A jade_gd object
 #' for a \code{jade_admm} object use \code{fits=obj$beta}.
