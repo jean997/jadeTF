@@ -97,15 +97,15 @@ cv_err <- function(orig.path, cv.path.list=NULL,
 		                        y=cv.err[keep.fits[[(i+1)]]],
 		                        xout=orig.path$l1.total[keep.fits[[1]]],
 		                        rule=2)$y
+		cv.err.l1[i,] <- cv.err.l1[i,]/n.test[i]
 	}
 
-
+  #cv.err.l1 is total error e_k(gamma)
+	#err.l1 is average error over all folds cv(gamma)
 	err.l1 <- rep(NA, n.gamma)
-	err.l1[keep.fits[[1]]]<- colSums(cv.err.l1)/sum(n.test)
+	err.l1[keep.fits[[1]]]<- colSums(cv.err.l1)/n.folds
 	err.se.l1 <- rep(NA, n.gamma)
-	for(i in 1:n.folds){
-	  cv.err.l1[i,] <- cv.err.l1[i,]/n.test[i]
-	}
+	cv.err.l1.avg <- matrix(nrow=n.folds, ncol=n.gamma)
 	err.se.l1[keep.fits[[1]]] <- apply(cv.err.l1, MARGIN=2, FUN=sd)/sqrt(n.folds)
 	cv.min.l1 <-  which.min(err.l1)
 	cv.1se.l1.w <-  orig.path$l1.total[which(err.l1 < (err.l1[cv.min.l1] + err.se.l1[cv.min.l1]))]
@@ -113,7 +113,7 @@ cv_err <- function(orig.path, cv.path.list=NULL,
 
 	return(list("sep.total"=orig.path$sep.total, "l1.total"=orig.path$l1.total,
 			"cv.err.l1"=cv.err.l1,  "err.l1"=err.l1, "err.se.l1"=err.se.l1,
-			"cv.min.l1"=cv.min.l1, "cv.1se.l1"=cv.1se.l1,
+			"cv.min.l1"=cv.min.l1, "cv.1se.l1"=cv.1se.l1, "n.test"=n.test,
 			"n.test"=n.test, "gamma"=orig.path$gammas,
 			"converged"=converged, "keep.fits"=keep.fits,
 			"sep.list"=sep.list, "l1.list"=l1.list, "log.gamma.list"=log.gamma.list))
