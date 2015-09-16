@@ -44,34 +44,30 @@ cv_pred.genlasso <- function(obj, n.folds=5, mode=c("predict", "approx"),
 			              soft_threshold(x, (1/wts^2)*l)},
 			            l=lambda2, wts=wtr)
 		}
-		X <- rbind(obj$lambda, co.train)
+
 		#Predict
 		#co.test is length(ote) x nL
 		if(mode=="approx"){
-			co.test <- apply(X, MARGIN=2, FUN=function(x, object, x.new){
-							c <- x[-1]
-							l <- x[1]
-							y.new <- approx(x=object$pos, y=c, xout=x.new)$y
-							return(y.new)},  object =out.train, x.new=xte)
+			co.test <- apply(co.train, MARGIN=2, FUN=function(c){
+							y.new <- approx(x=xtr, y=c, xout=xte)$y
+							return(y.new)})
 		}else if(mode == "predict"){
-			co.test <- apply(X, MARGIN=2, FUN=function(x, object, x.new){
-							c <- x[-1]
-							l <- x[1]
+			co.test <- apply(co.train, MARGIN=2, FUN=function(c){
 							z = .Call("tf_predict_R",
                     sBeta = as.double(c),
-                    sX = as.double(object$pos),
-                    sN = length(object$y),
-                    sK = as.integer(object$ord),
-                    sX0 = as.double(x.new),
-                    sN0 = length(x.new),
-                    sNLambda = length(l),
+                    sX = as.double(xtr),
+                    sN = length(xtr),
+                    sK = as.integer(obj$ord),
+                    sX0 = as.double(xte),
+                    sN0 = length(xte),
+                    sNLambda = 1,
                     sFamily = 0,
                     sZeroTol = as.double(zero.tol),
                     package = "jadeTF")
-							return(z)}, object =out.train, x.new=xte)
+							return(z)})
 		}
 		if(metric == "mse"){
-			test.loss <-(obj$y[ote]-co.test)^2
+			test.loss <-((obj$y[ote]-co.test)*wte)^2
 		}else if(metric=="abs"){
 			test.loss <-abs(obj$y[ote]-co.test)
 		}else if(metric=="pois"){
