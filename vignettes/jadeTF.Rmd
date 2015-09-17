@@ -85,11 +85,11 @@ In most cases we don't just want the solution for a single value of `gamma`. We 
 
 Both are initiated with a fit at `gamma=0`. `jade_path_planned` will run a series of fits from a specified starting point and increasing by a given step size on the log scale until the path is finished. It might be difficult to know where to start or what step size to use. `path_guess` doesn't require this information and will try to fit a specified number of fits which are which have approximately evenly spaced values of $\sum_{i=1}^{K}\Vert \theta_{i}\Vert_{1}$. This can be faster or slower than `jade_path_planned` and is a more consistent way to guarantee a desired density of fits along the path. It is especially useful if you are fitting many windows and don't want to individually tinker around with each one to try to find good starting places.
 
-Running a full path can take a while. Partial paths are saved to temp files that can be specified and the full path is always saved to an output file as well as returned. The code below takes about 110 minutes on a standard laptop. 
+Running a full path can take a while. Partial paths are saved to temp files that can be specified and the full path is always saved to an output file as well as returned. The code below takes about 110 minutes on a laptop. 
 ```{r, eval=FALSE}
-path <- jade_path(fit0 = fit0, n.fits = 100, out.file = "example_path.RData"
+path <- jade_path(fit0 = fit0, n.fits = 100, out.file = "example_path.RData")
 ```
-The function `jade_path` doesn't require any knowledge about what the critical values of `gamma` at which the curves are totally fused at the high end or just begin to fuse at the low end. In its current implementation `jade_path` can be slower and fit many more than the desired number of fits - for example the above code takes 14 minutes and results in 109 fits rahter than 100. There is an alternate function `jade_path_planned` which requres inputting a starting and approximate stopping point but can be faster if the points provided are good guesses. The code below only takes 12 minutes and fits 102 fits but has the advantage of knowing where to start and stop.
+The function `jade_path` doesn't require any knowledge about what the critical values of `gamma` at which the curves are totally fused at the high end or just begin to fuse at the low end. In its current implementation `jade_path` can be slower and fit many more than the desired number of fits - for example the above code takes 14 minutes and results in 110 fits rahter than 100. There is an alternate function `jade_path_planned` which requres inputting a starting and approximate stopping point but can be faster if the points provided are good guesses. The code below only takes 12 minutes and fits 102 fits but has the advantage of knowing where to start and stop.
 ```{r, eval=FALSE}
 path.planned <- jade_path_planned(fit0 = fit0, 
                                   log.gamma.start = -1, log.gamma.stop= 0.1, 
@@ -118,23 +118,32 @@ path.1 <- jade_path(fit0 = fit0.1, n.fits = 100, out.file = "example_path.1.RDat
 The function `cv_err` computes the cross validation error and determines the fit in the original path with the lowest cross validation error and 1 standard error rule cross validation error.
 ```{r, eval=FALSE}
 cv.path.list <- paste("example_path.", 1:5, ".RData", sep="")
-cv <- cv_err(orig.path=path, cv.path.list=cv.path.list)
+cv <- cv_err_wts(orig.path="example_path.RData", cv.path.list=cv.path.list)
 ```
+
+```{r, eval=FALSE}
+path <- getobj("example_path.RData")
+f <- path$JADE_fits[[cv$cv.1se.l1]]
+res.tab <- get_separated_regions(fit = fit1, new.tol=1e-2)
+plot_jade(fits = f$fits, pos = 1:100, maxwidth = 0.5, sep.tab = res.tab$merged)
+```
+
 
 ## When $K=2$, improve fits by including the estimated variance of the smoothed profiles.
 
 Estimate the variance of a smoothed fit to each group by bootstrapping:
 ```{r, eval=FALSE}
-v1 <- bs_var_tf(Y=y1, lambda=fit0$lambda[1], sample.size=10)
-v2 <- bs_var_tf(Y=y2, lambda=fit0$lambda[2], sample.size=15)
+set.seed(20000)
+v1 <- bs_var_tf(Y=y1, lambda=fit0$lambda[1])
+v2 <- bs_var_tf(Y=y2, lambda=fit0$lambda[2])
 fit_var <- cbind(v1$var, v2$var)
 ```
 
 Follow the same procedure as before -- fit first at `gamma = 0` and then for a grid of gamma values.
 ```{r, eval=FALSE}
 fit0_wts <- jade_admm(y, gamma=0, ord=2, sample.size = c(10, 15), fit.var=fit_var)
-path_wts <- jade_path(fit0 = fit0_withwts, n.fits = 100, out.file = "example_path_wts.RData", log.gamma.min=-1)
-path_planned_wts <- jade_path_planned(fit0=fit0_withwts, out.file="example_path_planned_wts.RData", log.gamma.start=0.05, log.gamma.stop=2.3, n.fits=100)
+path_wts <- jade_path(fit0 = fit0_wts, n.fits = 100, out.file = "example_path_wts.RData")
+path_planned_wts <- jade_path_planned(fit0=fit0_wts, out.file="example_path_planned_wts.RData", log.gamma.start=0.05, log.gamma.stop=1.7, n.fits=100)
 ```
 
 Cross validation for the weighted analysis:
@@ -145,4 +154,8 @@ cv_fit0(orig.fit=fit0_wts, n.folds=5, which.fold=1:5, save.prefix="f0_wts", retu
 for(i in 1:5){
   path.cv <- jade_path(fit0 = paste0("f0_wts.", i, ".RData"), n.fits = 100, out.file = paste0("example_path_wts.", i, ".RData"))
 }
+```
+```{r, eval=FALSE}
+cv.path.list <- paste("example_path_wts.", 1:3, ".RData", sep="")
+cv <- cv_err(orig.path="example_path_wts.RData", cv.path.list=cv.path.list)
 ```
