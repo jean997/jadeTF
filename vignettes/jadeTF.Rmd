@@ -156,6 +156,6 @@ for(i in 1:5){
 }
 ```
 ```{r, eval=FALSE}
-cv.path.list <- paste("example_path_wts.", 1:3, ".RData", sep="")
+cv.path.list <- paste("example_path_wts.", 1:5, ".RData", sep="")
 cv <- cv_err(orig.path="example_path_wts.RData", cv.path.list=cv.path.list)
 ```
