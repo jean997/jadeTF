@@ -63,7 +63,7 @@ bs_var_tf <- function(Y, lambda,
 		  new.sds <- rep(1, p)
 		}
 		if(!calc.sds) new.sds <- sds
-		f <- fit_one(y, lambda, pos, new.sds, sample.size, ord=ord)
+		f <- fit_one(y, lambda, pos, new.sds, k, ord=ord)
 		all.fits[,i] <- f$fit
 		i <- i+1
 	}
