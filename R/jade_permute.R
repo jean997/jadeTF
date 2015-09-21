@@ -112,7 +112,7 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
   return(list("sep.total"=sep.total, "tol"=tol, "gammas"=gammas))
 }
 
-jade_permute_results <- function(save.prefix, orig.gammas, n.perm, new.tol=NULL){
+jade_permute_results <- function(save.prefix, orig.gammas, n.perm, new.tol=1e-3){
   i <- 1
   sep.total <- matrix(nrow=length(orig.gammas), ncol=n.perm)
   while(i <=n.perm){
@@ -120,7 +120,7 @@ jade_permute_results <- function(save.prefix, orig.gammas, n.perm, new.tol=NULL)
     fn <- paste0(save.prefix, ".perm", i, ".RData")
     path.perm <- getobj(fn)
     if(new.tol){
-      s <- get_sep_total(path.perm, new.tol=new.tol)
+      s <- get_sep_total(path.perm, tol=new.tol)
     }else{
       s <- path.perm$sep.total
     }
