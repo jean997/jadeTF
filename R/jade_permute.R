@@ -112,23 +112,25 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
   return(list("sep.total"=sep.total, "tol"=tol, "gammas"=gammas))
 }
 
-jade_permute_results <- function(save.prefix, orig.gammas, n.perm, new.tol=1e-3){
+jade_permute_results <- function(save.prefix, orig.gammas, n.perm, new.tol=NULL){
   i <- 1
   sep.total <- matrix(nrow=length(orig.gammas), ncol=n.perm)
   while(i <=n.perm){
     cat(i, " .. ")
     fn <- paste0(save.prefix, ".perm", i, ".RData")
     path.perm <- getobj(fn)
-    if(new.tol){
+    if(!is.null(new.tol)){
       s <- get_sep_total(path.perm, tol=new.tol)
     }else{
       s <- path.perm$sep.total
     }
     if(!min(s) == 0) cat("Warning: Path may be incomplete.\n")
-    my.idx <- match(path.perm$gammas, orig.gammas)
-    if(length(my.idx) == length(path.perm$gammas)) cat("Warning: Gammas may not match correctly")
+    my.idx <- match(round(path.perm$gammas, digits=8), round(orig.gammas, digits=8))
+    if(length(my.idx) != length(path.perm$gammas)) cat("Warning: Gammas may not match correctly")
+    if(!all.equal(my.idx, 1:length(my.idx))) cat("Warning: Gammas may not match correctly")
     sep.total[my.idx, i] <- s
     sep.total[orig.gammas > max(path.perm$gammas), i] <- 0
+    i <- i+1
   }
   cat("\n")
   return(sep.total)
