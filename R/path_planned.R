@@ -1,6 +1,3 @@
-#Uses estimated start and stop points: log.gamma.start, log.gamma.stop. These should be good estimates
-#Rather than checking l1.gap we will just move from start to stop in even steps
-#Hard stop means go all the way to log.gamma.stop and don't go past even if path isn't done
 #' Fit JADE at a sequence of gamma values.
 #' @description This function requires having previously fit the data at \code{gamma}=0. JADE will be fit
 #' at a serries of \code{gamma} values evenly spaced on the log scale. There are three ways
@@ -95,7 +92,7 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start=NULL,
 
   #Set up
   if(even.spacing) log.gammas <- c(-Inf, log.gamma.start)
-    else log.gammas <- c(-Inf, gammas[1])
+    else log.gammas <- c(-Inf, log10(gammas[1]))
 
 	p <- dim(fit0$y)[1]
 	K <- dim(fit0$y)[2]
@@ -194,7 +191,6 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start=NULL,
 		}
 		if(verbose) cat(i, "log.gamma: ", log.gammas[i], "n rep: ", fit$n, " converged: ", fit$converged, " sep.total: ", sep.total[i], " l1.total: ", l1.total[i], "\n")
 		converged[i] <- fit$converged
-
 		#Find the next gamma to evaluate
 		if(!hard.stop & even.spacing){
 			if((log.gammas[i] - log.gamma.start) < 2*step.size & sep.total[i] < (0.95*sep.total0)){
@@ -218,7 +214,7 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start=NULL,
 		    done <- TRUE
 		    break
 		  }else{
-		    new.gamma <- gammas[i]
+		    new.gamma <- log10(gammas[i])
 		  }
 		}
 		#Find the fit with the closest gamma to the next value.
@@ -242,10 +238,6 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start=NULL,
 		#cat("Next: ", log.gammas[i], " ")
 	}
 
-	#bic <- lapply(fits[-1], FUN=jade_bic, tol_beta=tol)
-	#bic <- matrix(unlist(bic), nrow=length(fits)-1, byrow=TRUE)
-
-	log.gammas <- log.gammas[ -(length(log.gammas))]
 	path <- list("JADE_fits"=fits, "sep"=sep, "converged"=converged,
 	             "l1.total" = l1.total, "sep.total"=sep.total,
 	             #"bic"=bic[,1], "df"=bic[,2],
