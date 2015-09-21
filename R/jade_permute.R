@@ -22,7 +22,7 @@
 #'@export
 jade_permute <- function(Y, fit0, gammas, save.prefix,
                          tol=1e-3, which.perm=1:100,
-                         n.rep.fit.var=NULL,
+                         n.rep.fit.var=NULL, adjust.rho.alpha=TRUE,
                          sd.type=c("Orig", "Binomial", "Poisson"), READS=NULL){
   sd.type <- match.arg(sd.type)
   if(sd.type == "Binomial" & is.null(READS)){
@@ -100,7 +100,7 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
     path.perm <- jade_path_planned(fit0.perm, out.file=fn,
                                   gammas=gammas[-1], return.object=TRUE,
                                   tol=tol, verbose = TRUE,
-                                  adjust.rho.alpha=TRUE)
+                                  adjust.rho.alpha=adjust.rho.alpha)
     s <- path.perm$sep.total
     if(!min(s) == 0) cat("Warning: Path may be incomplete.\n")
     my.idx <- match(round(path.perm$gammas, digits=8), round(gammas, digits=8))

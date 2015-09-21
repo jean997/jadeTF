@@ -233,6 +233,7 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 	}
 
 	path <- list("JADE_fits"=fits, "sep"=sep, "l1.total" = l1.total, "converged"=converged,
+	             "adjust.rho.alpha"=adjust.rho.alpha,
 		             #"bic"=bic[,1], "df"=bic[,2],
 		             "sep.total"=sep.total, "gammas"=10^(log.gammas), "tol"=tol)
 

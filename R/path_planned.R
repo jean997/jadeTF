@@ -240,6 +240,7 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start=NULL,
 
 	path <- list("JADE_fits"=fits, "sep"=sep, "converged"=converged,
 	             "l1.total" = l1.total, "sep.total"=sep.total,
+	             "adjust.rho.alpha"=adjust.rho.alpha,
 	             #"bic"=bic[,1], "df"=bic[,2],
 	             "gammas"=10^(log.gammas), "tol"=tol)
 	if(verbose) cat("Done!\n")
