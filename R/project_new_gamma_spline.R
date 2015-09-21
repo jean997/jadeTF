@@ -16,12 +16,15 @@ project_new_gamma_spline <- function(l1.target, l1.total, log.gammas,
 
   #cat(length(x), ord, k, "\n")
   #cat(y, "\n", x, "\n")
-  sm <-smooth.spline(x=x, y=y)
   x.new <- seq(lg.top-2*buffer, max(log.gammas)+1, by=(buffer/2))
-
-  pred <- predict(sm, x = x.new)
+  sm <-try(smooth.spline(x=x, y=y), silent=TRUE)
+  if(class(sm)=="try-error"){
+    sm <- lm(y~x)
+    pred <- approx(x = x, y=sm$fitted.values, xout = x.new)
+  }else{
+    pred <- predict(sm, x = x.new)
+  }
   co.allgammas <- cummin(pred$y)
-
   new.gamma <- NA
   i <- 1
   warn <- FALSE
