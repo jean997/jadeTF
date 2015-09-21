@@ -18,11 +18,9 @@ project_new_gamma_spline <- function(l1.target, l1.total, log.gammas,
   #cat(y, "\n", x, "\n")
   sm <-smooth.spline(x=x, y=y)
   x.new <- seq(lg.top-2*buffer, max(log.gammas)+1, by=(buffer/2))
-  x.new <- c(x.new, l1.target)
-  x.new <- sort(x.new, decreasing = FALSE)
+
   pred <- predict(sm, x = x.new)
-  sm.iso <- isoreg(x=pred$x, y=-pred$y)
-  co.allgammas <- -sm.iso$yf
+  co.allgammas <- cummin(pred$y)
 
   new.gamma <- NA
   i <- 1
@@ -46,3 +44,7 @@ project_new_gamma_spline <- function(l1.target, l1.total, log.gammas,
   return(list("new.gamma"=new.gamma, "warn"=warn))
 }
 
+
+make.monotone <- function(x, y){
+
+}
