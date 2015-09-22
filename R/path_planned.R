@@ -77,10 +77,12 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start=NULL,
     even.spacing=FALSE
     max.it = length(gammas)+1
   }
-  if(even.spacing & (is.null(log.gamma.stop) | is.null(n.fits) )& is.null(step.size)){
-    stop("Invalid arguments to jade_path_planned.")
-  }else if(is.null(step.size)){
-    step.size <- (log.gamma.stop-log.gamma.start)/n.fits
+  if(even.spacing){
+    if( (is.null(log.gamma.stop) | is.null(n.fits)) & is.null(step.size)){
+      stop("Invalid arguments to jade_path_planned.")
+    }else if(is.null(step.size)){
+      step.size <- (log.gamma.stop-log.gamma.start)/n.fits
+    }
   }
 
   if(class(fit0)=="character"){
