@@ -7,12 +7,12 @@
 #buffer
 #l1.gap
 project_new_gamma_spline <- function(l1.target, l1.total, log.gammas,
-                              lg.top, buffer, l1.gap){
+                              keep, lg.top, buffer, l1.gap){
 
-  j <- length(l1.target)
+  j <- length(keep)
 
-  y=l1.total[order(log.gammas)]
-  x=sort(log.gammas)
+  y=l1.total[order(log.gammas[keep])]
+  x=sort(log.gammas[keep])
 
   #cat(length(x), ord, k, "\n")
   #cat(y, "\n", x, "\n")
@@ -45,9 +45,4 @@ project_new_gamma_spline <- function(l1.target, l1.total, log.gammas,
     i <- i+1
   }
   return(list("new.gamma"=new.gamma, "warn"=warn))
-}
-
-
-make.monotone <- function(x, y){
-
 }
