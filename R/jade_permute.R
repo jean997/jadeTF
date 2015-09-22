@@ -102,7 +102,7 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
                                   tol=tol, verbose = TRUE,
                                   adjust.rho.alpha=adjust.rho.alpha)
     s <- path.perm$sep.total
-    if(!min(s) == 0) cat("Warning: Path may be incomplete.\n")
+
     my.idx <- match(round(path.perm$gammas, digits=8), round(gammas, digits=8))
     if(length(my.idx) != length(path.perm$gammas)) cat("Warning: Gammas may not match correctly")
     if(!all.equal(my.idx, 1:length(my.idx))) cat("Warning: Gammas may not match correctly")
