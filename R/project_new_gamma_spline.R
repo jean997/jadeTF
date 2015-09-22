@@ -10,9 +10,10 @@ project_new_gamma_spline <- function(l1.target, l1.total, log.gammas,
                               keep, lg.top, buffer, l1.gap){
 
   j <- length(keep)
-
-  y=l1.total[order(log.gammas[keep])]
-  x=sort(log.gammas[keep])
+  l1.total.k <- l1.total[keep]
+  log.gammas.k <- log.gammas[keep]
+  y=l1.total.k[order(log.gammas.k)]
+  x=sort(log.gammas.k)
 
   #cat(length(x), ord, k, "\n")
   #cat(y, "\n", x, "\n")
