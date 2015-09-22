@@ -96,7 +96,7 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
                      lambda=fit0$lambda, sample.size=sample.size, ord=fit0$ord,
                      sds=sds.perm, fit.var=fit.var)
 
-    fn <- paste0(save.prefix, ".perm", j, ".RData")
+    fn <- paste0(save.prefix, ".perm", which.perm[j], ".RData")
     path.perm <- jade_path_planned(fit0.perm, out.file=fn,
                                   gammas=gammas[-1], return.object=TRUE,
                                   tol=tol, verbose = TRUE,
