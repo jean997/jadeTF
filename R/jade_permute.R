@@ -49,7 +49,7 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
   #Results to return
   sep.total <- matrix(nrow=length(gammas), ncol= length(which.perm))
 
-  for(j in which.perm){
+  for(j in 1:length(which.perm)){
     #New data
     o <- sample(1:n, size = n, replace = FALSE)
     Y.perm <- Y[, o]
@@ -102,7 +102,6 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
                                   tol=tol, verbose = TRUE,
                                   adjust.rho.alpha=adjust.rho.alpha)
     s <- path.perm$sep.total
-
     my.idx <- match(round(path.perm$gammas, digits=8), round(gammas, digits=8))
     if(length(my.idx) != length(path.perm$gammas)) cat("Warning: Gammas may not match correctly")
     if(!all.equal(my.idx, 1:length(my.idx))) cat("Warning: Gammas may not match correctly")
