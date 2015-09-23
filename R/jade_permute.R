@@ -123,7 +123,6 @@ jade_permute_results <- function(save.prefix, orig.gammas, n.perm, new.tol=NULL)
     }else{
       s <- path.perm$sep.total
     }
-    if(!min(s) == 0) cat("Warning: Path may be incomplete.\n")
     my.idx <- match(round(path.perm$gammas, digits=8), round(orig.gammas, digits=8))
     if(length(my.idx) != length(path.perm$gammas)) cat("Warning: Gammas may not match correctly")
     if(!all.equal(my.idx, 1:length(my.idx))) cat("Warning: Gammas may not match correctly")
