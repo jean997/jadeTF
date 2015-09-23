@@ -9,7 +9,6 @@
 project_new_gamma_spline <- function(l1.target, l1.total, log.gammas,
                               keep, lg.top, buffer, l1.gap){
 
-  j <- length(keep)
   l1.total.k <- l1.total[keep]
   log.gammas.k <- log.gammas[keep]
   y=l1.total.k[order(log.gammas.k)]
@@ -29,7 +28,7 @@ project_new_gamma_spline <- function(l1.target, l1.total, log.gammas,
   new.gamma <- NA
   i <- 1
   warn <- FALSE
-  while(is.na(new.gamma) & i <= j){
+  while(is.na(new.gamma) & i <= length(l1.target)){
     new.gamma <- x.new[ which.min(abs(co.allgammas-l1.target[i]))]
     #Not allowed to go back too far
     new.gamma <- max(new.gamma, lg.top-2*buffer)
@@ -40,7 +39,7 @@ project_new_gamma_spline <- function(l1.target, l1.total, log.gammas,
     cat(l1.target[i], " ", new.gamma, "\n")
     if(abs(new.gamma-ng) > 5*buffer){
       #We haven't been able to hit this target - try the next one
-      if(i < j) new.gamma <- NA
+      if(i < length(l1.target)) new.gamma <- NA
         else warn <- TRUE
     }
     i <- i+1
