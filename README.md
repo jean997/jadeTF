@@ -7,6 +7,8 @@ This package is still very much a work in progress and could become temporarily 
 
 To install:
 ```{r}
+#Install CLusterpath
+install.packages("clusterpathRcpp",repos="http://r-forge.r-project.org")
 library(devtools)
 devtools::install_git("https://github.com/jean997/jadeTF.git")
 ```
