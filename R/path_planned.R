@@ -75,7 +75,6 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start=NULL,
     even.spacing=TRUE
   }else{
     even.spacing=FALSE
-    max.it = length(gammas)+1
   }
   if(even.spacing){
     if( (is.null(log.gamma.stop) | is.null(n.fits)) & is.null(step.size)){
