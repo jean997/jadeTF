@@ -2,7 +2,6 @@
 #'
 #' @description Solves the same problem solved by \code{\link{jade_admm}}.
 #' This function also allows an additional L_1 penalty on the fitted values.
-#'
 #' @param y Data matrix of size p x K. May contain NA values but may not contain rows which are all NA.
 #' @param gamma Fusion penalty.
 #' @param pos Position vector of length p. If missing will use 1:p.
@@ -37,7 +36,6 @@
 #' @param tol Tolerance for declaring points separated.
 #' Separation can be recalculated with a different value of \code{tol} using \code{\link{get_sep}}.
 #' @param max.it Maximum number of iterations.
-#'
 #' @return A \code{jade_tf} object. This really just a list with values including
 #' \describe{
 #'   \item{\code{fits}}{A p x K matrix of solutions.}
