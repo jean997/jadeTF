@@ -23,8 +23,8 @@ fit_one <- function(y, lambda, pos, sds, sample.size, ord,
 
   if(is.na(lambda)){
     cv <- cv_pred.genlasso(obj=tfit.out, n.folds = 5, mode = "predict",
-                           lambda2=lambda2/sample.size, metric=metric, truncate.metric=truncate.metric,
-                           shift=shift)
+                           lambda2=lambda2/sample.size, metric=metric,
+                           truncate.metric=truncate.metric, shift=shift)
     l <- cv$lambda.1se #l = lambda_1/(N*w^2) or lambda_1/N
     lambda <- l*sample.size
     if(equal.wts) lambda <- lambda*(wts[1])^2
