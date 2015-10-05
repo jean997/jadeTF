@@ -21,10 +21,14 @@
 #' }
 #'@export
 jade_permute <- function(Y, fit0, gammas, save.prefix,
-                         tol=1e-3, which.perm=1:100,
+                         tol=1e-3, which.perm=1:100, sds.mat=NULL,
                          n.rep.fit.var=NULL, adjust.rho.alpha=TRUE,
-                         sd.type=c("Orig", "Binomial", "Poisson"), READS=NULL){
+                         sd.type=c("Mat", "Orig", "Binomial", "Poisson"), READS=NULL){
   sd.type <- match.arg(sd.type)
+  if(sd.type=="Mat"){
+    if(is.null(sds.mat)) stop("For Mat sd.type please provide sds.mat")
+    stopifnot(all(dim(Y)==dim(sds.mat)))
+  }
   if(sd.type == "Binomial" & is.null(READS)){
     stop("For Binomial type please provide READS")
   }
@@ -53,6 +57,7 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
     #New data
     o <- sample(1:n, size = n, replace = FALSE)
     Y.perm <- Y[, o]
+    if(!is.null(sds.mat)) sds.mat.perm <- sds.mat[,o]
     if(!is.null(READS)) READS.perm <- READS[, o]
       else READS.perm <- NULL
     y.perm <- matrix(nrow=p, ncol=K)
@@ -61,7 +66,10 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
     sds.perm <- matrix(nrow=p, ncol=K)
     for(i in 1:K){
       Yi <- Y.perm[, grp.start[i]:grp.stop[i]]
-      if(sd.type == "Orig" & is.null(READS)){
+      if(sd.type=="Mat"){
+        sds.mati <- sds.mat.perm[, grp.start[i]:grp.stop[i]]
+        r <- mat.func(Yi, sds.mati)
+      }else if(sd.type == "Orig" & is.null(READS)){
         y.perm[,i] <- rowSums(Yi)/sample.size[i]
       }else if(sd.type=="Binomial" | !is.null(READS)){
         Ri <- READS.perm[, grp.start[i]:grp.stop[i]]
@@ -134,7 +142,12 @@ jade_permute_results <- function(save.prefix, orig.gammas, n.perm, new.tol=NULL)
   return(sep.total)
 }
 
-
+mat.func <- function(Y, sds.mat){
+  S <- 1/(sds.mat^2)
+  y <- rowSums(Y/(sds.mat^2))/rowSums(S)
+  sds <- 1/sqrt(rowSums(S))
+  return(list("y"=y, "sds"=sds))
+}
 binom.func <- function(Y, READS){
   y <- rowSums(Y)/rowSums(READS)
   yhat <- (rowSums(Y)+0.5)/(rowSums(READS)+1)
