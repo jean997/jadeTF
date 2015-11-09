@@ -23,7 +23,7 @@
 #' @param fit.var Matrix of size p x K of estimated variance of trendfiltering fits.
 #' This will be used to construct the pairwise weight matrices \eqn{W}{W}.
 #' Currently this is only supported for \eqn{K=2}.
-#' \code{fit.var} can be estimated by bootstrapping. See \code{\link{bs_var}}.
+#' \code{fit.var} can be estimated by bootstrapping. See \code{\link{bs_var_tf}}.
 #' @param var.wts If \code{fit.var} is not provided, the diagonal
 #' elements of \eqn{W} may be specified here.
 #' Since pairwise weights are currently only allowed for \eqn{K=2},
