@@ -54,23 +54,26 @@ bs_var_tf <- function(Y, lambda,
 		  r <- binom.func(new.Y, new.READS)
 		  y <- r$y
 		  new.sds <- r$sds
+		  ss <- 1
 		}else if(sd.type=="Poisson"){
 		  r <- poisson.func(new.Y)
 		  y<- r$y
 		  new.sds <- r$sds
+		  ss <- 1
 		}else if(sd.type=="Equal"){
 		  y <- rowSums(new.Y)/k
 		  new.sds <- rep(1, p)
+		  ss <- k
 		}
 		if(!calc.sds) new.sds <- sds
-		f <- fit_one(y, lambda, pos, new.sds, k, ord=ord)
+		f <- fit_one(y, lambda, pos, new.sds, ss, ord=ord)
 		all.fits[,i] <- f$fit
 		i <- i+1
 	}
-		cat("\n")
-		avg.fit <- rowMeans(all.fits)
-		var.fit <- (1/(n.rep-1))*rowSums((all.fits-avg.fit)^2)
-		return(list("all.fits"=all.fits, "avg"=avg.fit, "var"=var.fit))
+	cat("\n")
+	avg.fit <- rowMeans(all.fits)
+	var.fit <- (1/(n.rep-1))*rowSums((all.fits-avg.fit)^2)
+	return(list("all.fits"=all.fits, "avg"=avg.fit, "var"=var.fit))
 }
 
 
