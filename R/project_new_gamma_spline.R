@@ -20,7 +20,7 @@ project_new_gamma_spline <- function(l1.target, l1.total, log.gammas,
   sm <-try(smooth.spline(x=x, y=y), silent=TRUE)
   if(class(sm)=="try-error"){
     sm <- lm(y~x)
-    pred <- approx(x = x, y=sm$fitted.values, xout = x.new)
+    pred <- approx(x = x, y=sm$fitted.values, xout = x.new, rule=2)
   }else{
     pred <- predict(sm, x = x.new)
   }
