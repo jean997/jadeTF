@@ -144,6 +144,8 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 			log.gammas <- c(log.gammas, min(new.gamma, log.gamma.max))
 	}
 
+	small.step.ct <- 0
+	buffer.orig <- buffer
 	while(!done){
 		g <- 10^log.gammas[i]
 		#cat("Gamma", g, "\n")
@@ -211,6 +213,18 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 		  break
 		}
 
+		#Count how many small steps we've taken. Take a big one if nesc.
+		if(abs(new.gamma - max(log.gammas)) > 2*buffer | min(abs(l1.total[i]-l1.total[-1])) > l1.gap ){
+		  small.step.ct <- 0
+		  buffer <- buffer.orig
+		}else{
+		  small.step.ct <- small.step.ct + 1
+		}
+		cat("small.step.ct: ", small.step.ct, " buffer: ", buffer, "\n")
+		if(small.step.ct > 5 & buffer <= 1e3*buffer.orig){
+		  buffer <- 10*buffer
+		  small.step.ct <- 0
+		}
 		#Find the fit with the closest gamma to the next value.
 		#Use solutions from this fit as new theta0 value.
 		closest.idx <- which.min(abs(log.gammas[-1]-new.gamma))+1

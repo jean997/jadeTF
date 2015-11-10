@@ -24,6 +24,11 @@ project_new_gamma_spline <- function(l1.target, l1.total, log.gammas,
   }else{
     pred <- predict(sm, x = x.new)
   }
+  if(pred$y[1] == min(pred$y)){
+    new.gamma <- max(log.gammas) + buffer
+    warn = FALSE
+    return(list("new.gamma"=new.gamma, "warn"=warn))
+  }
   co.allgammas <- cummin(pred$y)
   new.gamma <- NA
   i <- 1
