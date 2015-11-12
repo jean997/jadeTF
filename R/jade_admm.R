@@ -63,7 +63,7 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
                       sds=NULL, fit.var=NULL, var.wts=NULL, subset.wts=NULL,
                       theta0=NULL, u.alpha0 = NULL, u.beta0=NULL,
                       verbose=FALSE, tol=0.001, max.it=1000,
-                      rho.alpha=NULL, rho.beta=1, adjust.rho.alpha=FALSE,
+                      rho.alpha=NULL, rho.beta=1, adjust.rho.alpha=TRUE,
                       tau.decr=2, tau.incr=2, mu=10, e.rel=1e-4, e.abs=1e-8){
 
   stopifnot(ord %in% c(0, 1, 2))
@@ -224,14 +224,12 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
       }
       if(verbose) cat("Changing rho.beta ", rho.beta, "\n")
     }
-    #if( iter %% 100 == 1){
-    #	if(verbose) cat(iter, " ", primal.resid.norm.beta, " ", dual.resid.norm.beta, "\n")
-    #}
 
     #Adjust rho.alphas - there is a different stepsize for each group
-    primal.resid.norm.alpha <- sqrt(colSums((D%*%theta-alpha)^2))
+    primal.resid.norm.alpha <- sqrt(colSums((D%*%theta-alpha)^2)) #Lenth K
     dual.resid.norm.alpha <- sqrt(rowSums((rho.alpha*(t(alpha-alpha.old)%*%D))^2))
     if(adjust.rho.alpha){
+      #Increase rho alphas?
       if(any(primal.resid.norm.alpha/dual.resid.norm.alpha > mu)){
         idx <- which(primal.resid.norm.alpha/dual.resid.norm.alpha > mu)
         for(j in idx){
@@ -241,6 +239,7 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
           if(verbose) cat("Changing rho.alpha ",j, " ", rho.alpha[j], "\n")
         }
       }
+      #Decrease rho alphas?
       if(any(dual.resid.norm.alpha/primal.resid.norm.alpha > mu)){
         idx <- which(dual.resid.norm.alpha/primal.resid.norm.alpha > mu)
         for(j in idx){
@@ -252,24 +251,17 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
       }
     }
 
-    primal.resid.norm.alpha <- sum(primal.resid.norm.alpha)
-    dual.resid.norm.alpha <- sum(dual.resid.norm.alpha)
-
-    if( iter %% 100 == 1){
-      if(verbose) cat(iter, " ", primal.resid.norm.alpha, " ", dual.resid.norm.alpha, "\n")
-    }
-
 
     #Calculate stopping criteria
-    dual.resid.norm <- dual.resid.norm.alpha  + dual.resid.norm.beta
-    primal.resid.norm <- primal.resid.norm.alpha  + primal.resid.norm.beta
+    dual.resid.norm <- sqrt( sum((rho.alpha*(t(alpha-alpha.old)%*%D))^2)  +  sum((rho.beta*(beta-beta.old))^2))
+    primal.resid.norm <- sqrt(  sum((D%*%theta-alpha)^2)   +  sum((beta-theta)^2) )
 
-    rel.cri.pri <- max( sqrt(sum((D%*%theta)^2)), sqrt(sum(alpha^2)) + sqrt(sum(beta^2)))
-    rel.cri.dual <- sqrt(sum((t(D)%*%u.alpha)^2)) + sqrt(sum(u.beta^2))
+    rel.cri.pri <- max( sqrt(sum((D%*%theta)^2) + sum(theta^2)), sqrt(sum(alpha^2) + sum(beta^2)))
+    rel.cri.dual <- sqrt(sum((t(D)%*%u.alpha)^2) + sum(u.beta^2))
     e.dual <- sqrt(K*(alpha.size + p))*e.abs + e.rel*rel.cri.dual
     e.primal <- sqrt(K*(alpha.size + p))*e.abs  + e.rel*rel.cri.pri
 
-    if(verbose){
+    if(verbose & iter%%100==1){
       cat(primal.resid.norm, " ", e.primal, "\n")
       cat(dual.resid.norm, " ", e.dual, "\n")
       cat((primal.resid.norm < e.primal & dual.resid.norm < e.dual), "\n")
