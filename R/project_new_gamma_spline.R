@@ -7,10 +7,10 @@
 #buffer
 #l1.gap
 project_new_gamma_spline <- function(l1.target, l1.total, log.gammas,
-                              keep, lg.top, buffer, l1.gap){
+                              keep.fits, lg.top, buffer, l1.gap){
 
-  l1.total.k <- l1.total[keep]
-  log.gammas.k <- log.gammas[keep]
+  l1.total.k <- l1.total[keep.fits]
+  log.gammas.k <- log.gammas[keep.fits]
   y=l1.total.k[order(log.gammas.k)]
   x=sort(log.gammas.k)
 
