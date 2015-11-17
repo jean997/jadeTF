@@ -34,78 +34,24 @@
 #'   were calculated}
 #' }
 #' @export
-jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
+jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
                             max.it=10000, log.gamma.min=-3, log.gamma.max=20,
                             start.step=0.03, tol=1e-3, max.fits= 10*n.fits,
                             buffer=0.001, restart.file=NULL, verbose=TRUE,
                             adjust.rho.alpha=TRUE){
 
-
-	if(is.null(temp.file)){
+  if(is.null(restart.file) & is.null(fit0)) stop("Please provide either fit0 or temp.file")
+  if(is.null(temp.file)){
     z <- unlist(strsplit(out.file, ".RData"))[1]
     temp.file <- paste(z, "_temp.RData", sep="")
-	}
-
-
-  if(class(fit0)=="character"){
-    fit0.file <- fit0
-    fit0 <- getobj(fit0.file)
   }
-  alg = fit0$algorithm
-  sep0 <- get_sep(fit0$fits, tol)
-
-	#Set up for fits
-	log.gammas <- c(-Inf, log.gamma.min)
-
-	p <- dim(fit0$y)[1]
-	K <- dim(fit0$y)[2]
-	l1.total0 <- 0
-	sep.total0 <- 0
-	for(j in 1:(K-1)){
-    for(l in (j+1):K){
-			sep.total0 <- sep.total0 + sum(sep0[[j]][[l-j]])
-			l1.total0 <- l1.total0 + sum(abs(fit0$fits[,j] - fit0$fits[,l]))
-		}
-	}
-	cat("K: ", K, " p: ", p, " l1.total0: ", l1.total0, " sep.total0: ", sep.total0, "\n")
-
-	l1.gap <- l1.total0/n.fits
-	#cat("Gap: ", l1.gap, "\n")
-
-	#l1.maxgap <- 2*l1.gap
-
-	#Structures for path
-	sep <- list()
-  for(j in 1:(K-1)){
-		sep[[j]] <- list()
-    for(l in (j+1):K){
-			sep[[j]][[l-j]] <- matrix(NA, nrow=p, ncol=0)
-    }
-	}
-	converged <- c(TRUE)
-	l1.total <- c(l1.total0)
-	sep.total <- c(sep.total0)
-	fits <- list()
-	fits[[1]] <- fit0
-
-	i <- 2
-
-	theta0=fit0$fits
-
-	if(alg=="admm"){
-	  u.alpha0=NULL
-	  rho.alpha=NULL
-	  u.beta0=NULL
-	  rho.beta=1
-	}else if(alg=="gd"){
-	  duals0=NULL
-	}
-	done <- FALSE
-
 	#Restarting from a temp file
 	if(!is.null(restart.file)){
 			path.temp <- getobj(restart.file)
 			i <- length(path.temp$JADE_fits)+1
+			fit0 <- path.temp$JADE_fits[[1]]
+			p <- dim(fit0$y)[1]
+			K <- dim(fit0$y)[2]
 			log.gammas <- log10(path.temp$gammas)
 			sep <- path.temp$sep
 			l1.total <- path.temp$l1.total
@@ -113,61 +59,85 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 			fits <- path.temp$JADE_fits
 			sep.total <- path.temp$sep.total
       converged <- path.temp$converged
+      tol <- path.temp$tol
       if(length(log.gammas)==i){
         new.gamma <- log.gammas[i]
         log.gammas <- log.gammas[-i]
       }else{
 			  #Find next gamma value
-        if(all(sep.total[-1] < sep.total0)) sep.total0 <- sep.total[2]
-			  l1.top <- min(l1.total[sep.total >= sep.total0 & is.finite(log.gammas)])
-			  l1.gap <- l1.top/n.fits
-			  lg.top <- max(log.gammas[sep.total >= sep.total0])
-			  if(!is.finite(lg.top)) lg.top <- min(log.gammas[-1])
-			  keep.fits <- which(l1.total <= l1.total0 & is.finite(log.gammas))
-			  if(length(keep.fits) < 6) keep.fits <- which(is.finite(log.gammas))
-			  new.gamma <- find_new_gamma(l1.total=l1.total, sep.total=sep.total,
-			                            log.gammas=log.gammas, start.step=start.step,
-			                            l1.gap=l1.gap, l1.top=l1.top, keep.fits=keep.fits,
-			                            tol=tol, buffer=buffer, lg.top = lg.top)
+			  new.gamma <- find_new_gamma(l1.total, log.gammas, sep.total, n.fits,
+			                              start.step, tol, buffer, verbose=TRUE)
+			  if(new.gamma$done) stop("Restarted but path seems to be done?")
+			  l1.gap <- new.gamma$l1.gap
+			  new.gamma <- new.gamma$new.gamma
       }
 			closest.idx <- which.min(abs(log.gammas[-1]-new.gamma))+1
 			#cat("Theta init idx ", closest.idx, "\n")
 			theta0 <- fits[[closest.idx]]$fits
-			if(alg=="admm"){
-			  u.alpha0=fits[[closest.idx]]$u.alpha
-			  rho.alpha=fits[[closest.idx]]$rho.alpha
-			  u.beta0=fits[[closest.idx]]$u.beta
-			  rho.beta=fits[[closest.idx]]$rho.beta
-			}else if(alg=="gd"){
-			  duals0=fits[[closest.idx]]$duals
-			}
+			u.alpha0=fits[[closest.idx]]$u.alpha
+			rho.alpha=fits[[closest.idx]]$rho.alpha
+			u.beta0=fits[[closest.idx]]$u.beta
+			rho.beta=fits[[closest.idx]]$rho.beta
 			log.gammas <- c(log.gammas, min(new.gamma, log.gamma.max))
+	}else{
+    if(class(fit0)=="character"){
+	    fit0.file <- fit0
+	    fit0 <- getobj(fit0.file)
+	  }
+	  sep0 <- get_sep(fit0$fits, tol)
+	  #Set up for fits
+	  log.gammas <- c(-Inf, log.gamma.min)
+
+	  p <- dim(fit0$y)[1]
+	  K <- dim(fit0$y)[2]
+	  l1.total0 <- 0
+	  sep.total0 <- 0
+	  for(j in 1:(K-1)){
+	    for(l in (j+1):K){
+	      sep.total0 <- sep.total0 + sum(sep0[[j]][[l-j]])
+	      l1.total0 <- l1.total0 + sum(abs(fit0$fits[,j] - fit0$fits[,l]))
+	    }
+	  }
+	  cat("K: ", K, " p: ", p, " l1.total0: ", l1.total0, " sep.total0: ", sep.total0, "\n")
+
+	  #Structures for path
+	  sep <- list()
+	  for(j in 1:(K-1)){
+	    sep[[j]] <- list()
+	    for(l in (j+1):K){
+	      sep[[j]][[l-j]] <- matrix(NA, nrow=p, ncol=0)
+	    }
+	  }
+	  converged <- c(TRUE)
+	  l1.total <- c(l1.total0)
+	  sep.total <- c(sep.total0)
+	  fits <- list()
+	  fits[[1]] <- fit0
+
+	  i <- 2
+	  theta0=fit0$fits
+	  u.alpha0=NULL
+	  rho.alpha=NULL
+	  u.beta0=NULL
+	  rho.beta=1
 	}
 
 	small.step.ct <- 0
 	buffer.orig <- buffer
+	done <- FALSE
 	while(!done){
 		g <- 10^log.gammas[i]
 		#cat("Gamma", g, "\n")
-		if(alg=="admm"){
-		  fit <- jade_admm(y=fit0$y, gamma=g, pos=fit0$pos, scale.pos=fit0$scale.pos,
+
+		fit <- jade_admm(y=fit0$y, gamma=g, pos=fit0$pos, scale.pos=fit0$scale.pos,
 		                   lambda=fit0$lambda, sample.size=fit0$sample.size, ord=fit0$ord,
 		                   sds=fit0$sds, fit.var=fit0$fit.var,
 		                   theta0=theta0, u.alpha0=u.alpha0, u.beta0=u.beta0, rho.beta=rho.beta,
 		                   rho.alpha=rho.alpha, tol=tol,  max.it=max.it,
 		                   adjust.rho.alpha=adjust.rho.alpha)
-		}else if(alg=="gd"){
-		  fit <- jade_gd(y=fit0$y, gamma=g, pos=fit0$pos, scale.pos=fit0$scale.pos,
-		                   lambda1=fit0$lambda1, lambda2=fit0$lambda2,
-		                   sample.size=fit0$sample.size, ord=fit0$ord,
-		                   sds=fit0$sds, fit.var=fit0$fit.var,
-		                   theta0=theta0, duals0=duals0,
-		                   sep.tol=tol,  max.it=max.it)
-		}
-
 		fits[[i]] <- fit
 
-		#Path elements: separation matrix, converged, l1.total, raw fits
+		#Things to keep track of: separation matrix, converged, l1.total, raw fits
 		sep.total <- c(sep.total, 0)
 		l1.total <- c(l1.total, 0)
 		converged <- c(converged, 0)
@@ -183,36 +153,16 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 		                " l1.total: ", l1.total[i], "\n")
 		converged[i] <- fit$converged
 
+		new.gamma <- find_new_gamma(l1.total, log.gammas, sep.total, n.fits,
+		                            start.step, tol, buffer, verbose=TRUE)
 
-		if(i == 2 & sep.total[i] < sep.total0){
-		  cat("Warning: May need to start path earlier")
-		  sep.total0 <- sep.total[i]
-		}
-		#Update the gap size
-		#We don't care about the density of the path when sep.total >= sep.total0.
-		#l1.top is the smallest value of l1.total achieved while the profiles are
-		#still as separated as they are with no penalty.
-		#We want a dense path between l1.top and 0
-		l1.top <- min(l1.total[sep.total >= sep.total0 & is.finite(log.gammas)])
-		l1.gap <- l1.top/n.fits
-		lg.top <- max(log.gammas[sep.total >= sep.total0])
-
-    if(!is.finite(lg.top)) lg.top <- min(log.gammas[-1])
-
-		#Find the next gamma to evaluate
-		keep.fits <- which(l1.total <= l1.total0 & is.finite(log.gammas))
-		if(length(keep.fits) < 6) keep.fits <- which(is.finite(log.gammas))
-		new.gamma <- find_new_gamma(l1.total=l1.total, sep.total=sep.total,
-		                            log.gammas=log.gammas, start.step=start.step,
-		                            l1.gap=l1.gap, l1.top=l1.top, keep.fits=keep.fits,
-		                            tol=tol, buffer=buffer, lg.top = lg.top)
-
-		if(is.na(new.gamma) | max(log.gammas) ==log.gamma.max | i >= max.fits){
+		if(new.gamma$done | max(log.gammas) ==log.gamma.max | i >= max.fits){
 		  if(verbose) cat("Finishing\n")
 		  done <- TRUE
 		  break
 		}
-
+    l1.gap <- new.gamma$l1.gap
+    new.gamma <- new.gamma$new.gamma
 		#Count how many small steps we've taken. Take a big one if nesc.
 		if(abs(new.gamma - max(log.gammas)) > 2*buffer | min(abs(l1.total[i]-l1.total[-i])) > l1.gap ){
 		  small.step.ct <- 0
@@ -230,14 +180,12 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 		closest.idx <- which.min(abs(log.gammas[-1]-new.gamma))+1
 		#cat("Theta init idx ", closest.idx, "\n")
 		theta0 <- fits[[closest.idx]]$fits
-		if(alg=="admm"){
-		  u.alpha0=fits[[closest.idx]]$u.alpha
-		  rho.alpha=fits[[closest.idx]]$rho.alpha
-		  u.beta0=fits[[closest.idx]]$u.beta
-		  rho.beta=fits[[closest.idx]]$rho.beta
-		}else if(alg=="gd"){
-		  duals0 <-  fits[[closest.idx]]$duals
-		}
+
+		u.alpha0=fits[[closest.idx]]$u.alpha
+		rho.alpha=fits[[closest.idx]]$rho.alpha
+		u.beta0=fits[[closest.idx]]$u.beta
+		rho.beta=fits[[closest.idx]]$rho.beta
+
 		log.gammas <- c(log.gammas, min(new.gamma, log.gamma.max))
 		i <- i+1
 		#cat("Next: ", log.gammas[i], " ")
