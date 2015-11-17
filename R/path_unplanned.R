@@ -214,7 +214,7 @@ jade_path <- function(fit0, n.fits, out.file, temp.file=NULL,
 		}
 
 		#Count how many small steps we've taken. Take a big one if nesc.
-		if(abs(new.gamma - max(log.gammas)) > 2*buffer | min(abs(l1.total[i]-l1.total[-1])) > l1.gap ){
+		if(abs(new.gamma - max(log.gammas)) > 2*buffer | min(abs(l1.total[i]-l1.total[-i])) > l1.gap ){
 		  small.step.ct <- 0
 		  buffer <- buffer.orig
 		}else{
