@@ -10,7 +10,7 @@ find_new_gamma <- function(l1.total, log.gammas, sep.total, n.fits,
   #Too early to use smoothing
   if(length(keep.fits) < 6){
     new.gamma <- max(log.gammas) + start.step
-    return(list("new.gamma"=new.gamma, "l1.gap"=min(l1.total)/n.fits))
+    return(list("new.gamma"=new.gamma, "l1.gap"=min(l1.total)/n.fits, "done"=FALSE))
   }
 
   log.gammas.k <- log.gammas[keep.fits]
