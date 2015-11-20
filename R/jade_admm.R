@@ -92,6 +92,7 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
   #Defaults
   #Standard deviations - A matrix
   if(is.null(sds)) sds <- matrix(1, p, K)
+  stopifnot(all(sds > 0))
   if(!is.null(fit.var) | !is.null(var.wts)){
     if(K > 2) cat("Warning: Pairwise weight matrix W is only used for 2 groups in this implementation.\n")
   }
