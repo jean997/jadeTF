@@ -23,11 +23,13 @@
 jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
                          tol=1e-3, which.perm=1:100, sds.mat=NULL,
                          n.rep.fit.var=NULL, adjust.rho.alpha=TRUE,
-                         sd.type=c("Mat", "Orig", "Binomial", "Poisson", "EqualFromData"), READS=NULL){
+                         sd.type=c("Mat", "Orig", "Binomial", "Poisson", "EqualFromData", "Mat2"), READS=NULL){
   sd.type <- match.arg(sd.type)
-  if(sd.type=="Mat"){
+  if(sd.type=="Mat" | sd.type=="Mat2"){
     if(is.null(sds.mat)) stop("For Mat sd.type please provide sds.mat")
     stopifnot(all(dim(Y)==dim(sds.mat)))
+    stopifnot(all(sds.mat > 0))
+    V <- sds.mat^2
   }
   if(sd.type == "Binomial" & is.null(READS)){
     stop("For Binomial type please provide READS")
@@ -36,7 +38,8 @@ jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
     fit0.file <- fit0
     fit0 <- getobj(fit0.file)
   }
-  if(!sd.type=="Orig" & !all(fit0$sample.size == 1)) cat("Error: With sd.type ", sd.type, " sample size should be 1 for all groups.")
+  if(!sd.type=="Orig" & !all(fit0$sample.size == 1)) stop("Error: With sd.type ", sd.type, " sample size should be 1 for all groups.")
+  if(is.null(sample.size)) sample.size <- fit0$sample.size
   stopifnot(all(gammas > 0))
   #For now, only admm supported here
   alg <- fit0$algorithm
@@ -45,11 +48,11 @@ jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
   #Info about the data
   n <- dim(Y)[2]
   p <- dim(Y)[1]
-  if(is.null(sample.size)) sample.size <- fit0$sample.size
+
   K <- length(sample.size)
   grp.start <- c(1, cumsum(sample.size)[-K]+1)
   grp.stop <- cumsum(sample.size)
-  if(!gammas[1]==0) gammas <- c(0, gammas)
+
 
   #Results to return
   sep.total <- matrix(nrow=length(gammas)+1, ncol= length(which.perm))
@@ -58,7 +61,10 @@ jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
     #New data
     o <- sample(1:n, size = n, replace = FALSE)
     Y.perm <- Y[, o]
-    if(!is.null(sds.mat)) sds.mat.perm <- sds.mat[,o]
+    if(!is.null(sds.mat)){
+      sds.mat.perm <- sds.mat[,o]
+      V.perm <- V[,o]
+    }
     if(!is.null(READS)) READS.perm <- READS[, o]
       else READS.perm <- NULL
     y.perm <- matrix(nrow=p, ncol=K)
@@ -70,6 +76,13 @@ jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
       if(sd.type=="Mat"){
         sds.mati <- sds.mat.perm[, grp.start[i]:grp.stop[i]]
         r <- mat.func(Yi, sds.mati)
+        y.perm[,i] <- r$y
+        sds.perm[,i]<- r$sds
+      }else if(sd.type=="Mat2"){
+        Vi <- V.perm[, grp.start[i]:grp.stop[i]]
+        r <- mat.func(Yi, Vi)
+        y.perm[,i] <- r$y
+        sds.perm[,i]<- r$sds
       }else if(sd.type == "Orig" & is.null(READS)){
         y.perm[,i] <- rowSums(Yi)/sample.size[i]
       }else if(sd.type=="Binomial" | !is.null(READS)){
@@ -117,7 +130,7 @@ jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
                                   adjust.rho.alpha=adjust.rho.alpha)
     s <- path.perm$sep.total
     my.idx <- match(round(path.perm$gammas, digits=8), round(c(0, gammas), digits=8))
-    if(length(my.idx) != length(path.perm$gammas)-1) cat("Warning: Gammas may not match correctly")
+    if(length(my.idx) != length(path.perm$gammas)) cat("Warning: Gammas may not match correctly")
     if(!all.equal(my.idx, 1:length(my.idx))) cat("Warning: Gammas may not match correctly")
     sep.total[ my.idx, j] <- s
     sep.total[c(0, gammas) > max(path.perm$gammas), j] <- 0
@@ -154,6 +167,11 @@ mat.func <- function(Y, sds.mat){
   sds <- 1/sqrt(rowSums(S))
   return(list("y"=y, "sds"=sds))
 }
+mat.func2 <- function(Y, V){
+  y <- rowMeans(Y)
+  sds <- sqrt(rowSums(V))/ncol(V)
+  return(list("y"=y, "sds"=sds))
+}
 binom.func <- function(Y, READS){
   y <- rowSums(Y)/rowSums(READS)
   yhat <- (rowSums(Y)+0.5)/(rowSums(READS)+1)
@@ -165,7 +183,7 @@ poisson.func <- function(Y){
   n <- dim(Y)[2]
   y_total <- rowSums(Y)
   y <- y_total/n
-  sds <- jitter(sqrt(y_total))/n
+  sds <- sqrt(y_total)/n
   return(list("y"=y, "sds"=sds))
 }
 eqfd.func <- function(Y){
