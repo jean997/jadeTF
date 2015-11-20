@@ -40,7 +40,7 @@
 #' \describe{
 #'   \item{\code{fits}}{A p x K matrix of solutions.}
 #'   \item{\code{n}}{Number of iterations to convergence}
-#'  \item{\code{duals}} Dual variable
+#'  \item{\code{duals}}{Dual variable}
 #'   \item{\code{sep}}{List of lists giving separation. See \code{\link{get_sep}}}
 #' }
 #' As well as all of the original parameters.
