@@ -127,7 +127,7 @@ jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
 
 jade_permute_results <- function(save.prefix, orig.gammas, n.perm, new.tol=NULL){
   i <- 1
-  sep.total <- matrix(nrow=length(orig.gammas), ncol=n.perm)
+  sep.total <- matrix(nrow=length(orig.gammas)+1, ncol=n.perm)
   while(i <=n.perm){
     cat(i, " .. ")
     fn <- paste0(save.prefix, ".perm", i, ".RData")
@@ -137,11 +137,11 @@ jade_permute_results <- function(save.prefix, orig.gammas, n.perm, new.tol=NULL)
     }else{
       s <- path.perm$sep.total
     }
-    my.idx <- match(round(path.perm$gammas, digits=8), round(orig.gammas, digits=8))
+    my.idx <- match(round(path.perm$gammas, digits=8), round(c(0, orig.gammas), digits=8))
     if(length(my.idx) != length(path.perm$gammas)) cat("Warning: Gammas may not match correctly")
     if(!all.equal(my.idx, 1:length(my.idx))) cat("Warning: Gammas may not match correctly")
     sep.total[my.idx, i] <- s
-    sep.total[orig.gammas > max(path.perm$gammas), i] <- 0
+    sep.total[c(0, orig.gammas) > max(path.perm$gammas), i] <- 0
     i <- i+1
   }
   cat("\n")
