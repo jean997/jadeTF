@@ -20,10 +20,10 @@
 #'   were calculated}
 #' }
 #'@export
-jade_permute <- function(Y, fit0, gammas, save.prefix,
+jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
                          tol=1e-3, which.perm=1:100, sds.mat=NULL,
                          n.rep.fit.var=NULL, adjust.rho.alpha=TRUE,
-                         sd.type=c("Mat", "Orig", "Binomial", "Poisson"), READS=NULL){
+                         sd.type=c("Mat", "Orig", "Binomial", "Poisson", "EqualFromData"), READS=NULL){
   sd.type <- match.arg(sd.type)
   if(sd.type=="Mat"){
     if(is.null(sds.mat)) stop("For Mat sd.type please provide sds.mat")
@@ -36,7 +36,8 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
     fit0.file <- fit0
     fit0 <- getobj(fit0.file)
   }
-
+  if(!sd.type=="Orig" & !all(fit0$sample.size == 1)) cat("Error: With sd.type ", sd.type, " sample size should be 1 for all groups.")
+  stopifnot(all(gammas > 0))
   #For now, only admm supported here
   alg <- fit0$algorithm
   stopifnot(alg == "admm")
@@ -44,14 +45,14 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
   #Info about the data
   n <- dim(Y)[2]
   p <- dim(Y)[1]
-  sample.size <- fit0$sample.size
+  if(is.null(sample.size)) sample.size <- fit0$sample.size
   K <- length(sample.size)
   grp.start <- c(1, cumsum(sample.size)[-K]+1)
   grp.stop <- cumsum(sample.size)
   if(!gammas[1]==0) gammas <- c(0, gammas)
 
   #Results to return
-  sep.total <- matrix(nrow=length(gammas), ncol= length(which.perm))
+  sep.total <- matrix(nrow=length(gammas)+1, ncol= length(which.perm))
 
   for(j in 1:length(which.perm)){
     #New data
@@ -80,6 +81,10 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
         r <- poisson.func(Yi)
         y.perm[,i] <- r$y
         sds.perm[,i] <- r$sds
+      }else if(sd.type=="EqualFromData"){
+        r <- eqfd.func(Yi)
+        y.perm[,i] <- r$y
+        sds.perm[,i]<- r$sds
       }
     }
     if(sd.type=="Orig") sds.perm <- fit0$sds
@@ -101,20 +106,21 @@ jade_permute <- function(Y, fit0, gammas, save.prefix,
 
     #Fit 0
     fit0.perm <- jade_admm(y=y.perm, gamma=0, pos=fit0$pos, scale.pos=fit0$scale.pos,
-                     lambda=fit0$lambda, sample.size=sample.size, ord=fit0$ord,
+                     lambda=fit0$lambda, sample.size=fit0$sample.size, ord=fit0$ord,
                      sds=sds.perm, fit.var=fit.var)
 
     fn <- paste0(save.prefix, ".perm", which.perm[j], ".RData")
+    if(gammas[1] == 0) gammas = gammas[-1]
     path.perm <- jade_path_planned(fit0.perm, out.file=fn,
-                                  gammas=gammas[-1], return.object=TRUE,
+                                  gammas=gammas, return.object=TRUE,
                                   tol=tol, verbose = TRUE,
                                   adjust.rho.alpha=adjust.rho.alpha)
     s <- path.perm$sep.total
-    my.idx <- match(round(path.perm$gammas, digits=8), round(gammas, digits=8))
-    if(length(my.idx) != length(path.perm$gammas)) cat("Warning: Gammas may not match correctly")
+    my.idx <- match(round(path.perm$gammas, digits=8), round(c(0, gammas), digits=8))
+    if(length(my.idx) != length(path.perm$gammas)-1) cat("Warning: Gammas may not match correctly")
     if(!all.equal(my.idx, 1:length(my.idx))) cat("Warning: Gammas may not match correctly")
-    sep.total[my.idx, j] <- s
-    sep.total[gammas > max(path.perm$gammas), j] <- 0
+    sep.total[ my.idx, j] <- s
+    sep.total[c(0, gammas) > max(path.perm$gammas), j] <- 0
   }
   return(list("sep.total"=sep.total, "tol"=tol, "gammas"=gammas))
 }
@@ -160,5 +166,11 @@ poisson.func <- function(Y){
   y_total <- rowSums(Y)
   y <- y_total/n
   sds <- jitter(sqrt(y_total))/n
+  return(list("y"=y, "sds"=sds))
+}
+eqfd.func <- function(Y){
+  y <- rowMeans(Y)
+  sds <- apply(Y, MARGIN=1, FUN=sd)/ncol(Y)
+  sds[sds==0] <- min(sds[sds > 0])
   return(list("y"=y, "sds"=sds))
 }
