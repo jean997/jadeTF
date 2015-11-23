@@ -3,13 +3,16 @@
 #' @param fit A JADE fit.
 #' @param which.window,chr Will be put in the table. Can be useful for writing other files.
 #' @param new.tol Recalculate separation using a different tolerance.
+#' @param min.gapwidth Merge regions separated by fewer than this many sites
+#' @param min.width Don't report regions smaller than this
 #' @return A list of two tables of separated regions.
 #' One of the tables is merged over partition types, the other is not.
 #' Returns 0 if all profiles are fused or only. These tables ca be passed
 #' to the \code{\link{plot_jade}} function in \code{sep.tab} argument.
 #' separated at singleton sites.
 #' @export
-get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL, data.range=NULL){
+get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL, data.range=NULL,
+                                  min.gapwidth=2, min.width=1){
   K <- dim(fit$fits)[2]
   #stopifnot(K==3)
 
@@ -30,11 +33,11 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
   z <- z[ !score(z) == zeros, ]
 
   #Merge over partition types
-  z.merge <- reduce(z, min.gapwidth=2)
-  z.merge <- z.merge[ width(z.merge) > 1, ]
+  z.merge <- reduce(z, min.gapwidth=min.gapwidth)
+  z.merge <- z.merge[ width(z.merge) > min.width, ]
 
   #Keep partition types separated
-  z.sep <- merge_close_regions(z)
+  z.sep <- merge_close_regions(z, margin=min.gapwidth)
   z.sep <- z.sep[ width(z.sep) > 1, ]
 
   if(nrow(z.merge) ==0 & nrow(z.sep) ==0) return(0)
