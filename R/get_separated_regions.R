@@ -4,15 +4,15 @@
 #' @param which.window,chr Will be put in the table. Can be useful for writing other files.
 #' @param new.tol Recalculate separation using a different tolerance.
 #' @param min.gapwidth Merge regions separated by fewer than this many sites
-#' @param min.width Don't report regions smaller than this
+#' @param min.width Report regions spanning at least this many sites.
 #' @return A list of two tables of separated regions.
 #' One of the tables is merged over partition types, the other is not.
 #' Returns 0 if all profiles are fused or only. These tables ca be passed
 #' to the \code{\link{plot_jade}} function in \code{sep.tab} argument.
 #' separated at singleton sites.
 #' @export
-get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL, data.range=NULL,
-                                  min.gapwidth=1, min.width=0){
+get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL,
+                                  min.gapwidth=2, min.width=1){
   K <- dim(fit$fits)[2]
 
   if(!is.null(new.tol)) sep <- get_sep(fit$beta, new.tol)
@@ -33,11 +33,11 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
 
   #Merge over partition types
   z.merge <- reduce(z, min.gapwidth=min.gapwidth)
-  z.merge <- z.merge[ width(z.merge) > min.width, ]
+  z.merge <- z.merge[ width(z.merge) >= min.width, ]
 
   #Keep partition types separated
   z.sep <- merge_close_regions(z, margin=min.gapwidth)
-  z.sep <- z.sep[ width(z.sep) > min.width, ]
+  z.sep <- z.sep[ width(z.sep) >= min.width, ]
 
   if(nrow(z.merge) ==0 & nrow(z.sep) ==0) return(0)
 
@@ -48,7 +48,7 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
   }
 
   res.tab.merge <- data.frame(matrix(nrow=nrow(z.merge), ncol=5+(K*(K-1)/2)))
-  names(res.tab.merge) <- c(names(res.tab.sep)[1:5], names(res.tab.sep)[8:(6+(K*(K-1)/2))])
+  names(res.tab.merge) <- c(names(res.tab.sep)[1:5], names(res.tab.sep)[7:(6+(K*(K-1)/2))])
 
   if(nrow(z.sep) > 0){
     res.tab.sep$Chrom <- chr
@@ -59,19 +59,19 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
     res.tab.sep$Width <- res.tab.sep$Stop - res.tab.sep$Start + 1
 
     for(i in 1:nrow(z.sep)){
-      f <- fit$fits[start(z.sep)[i]:end(z.sep)[i],]
+      f <- fit$fits[start(z.sep)[i]:end(z.sep)[i],, drop=FALSE]
       p <- fit$pos[start(z.sep)[i]:end(z.sep)[i]]
 
-      if(!is.null(data.range)){
-        f <- pmin(f, max(data.range))
-        f <- pmax(f, min(data.range))
-      }
       my.sep <- as.numeric(unlist(strsplit(z.sep$score[i], split=" ")))
-      res.tab.sep$Partition[i] <- sep_to_partition(my.sep, K, data=f)
+      res.tab.sep$Partition[i] <- jadeTF:::sep_to_partition(my.sep, K, data=f)
       for(j in 1:(K-1)){
         for(l in (j+1):K){
-          g <- f[,j]-f[,l]
-          res.tab.sep[i, paste("AvgGap", j, l, sep="")] <- sum(diff(p)*rollmean(abs(g),2))/(max(p)-min(p))
+          if(length(p)==1){
+            res.tab.sep[i, paste("AvgGap", j, l, sep="")]  = abs(g <- f[,j]-f[,l])
+          }else{
+            g <- f[,j]-f[,l]
+            res.tab.sep[i, paste("AvgGap", j, l, sep="")] <- sum(diff(p)*rollmean(abs(g),2))/(max(p)-min(p))
+          }
         }
       }
     }
@@ -84,17 +84,17 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
     res.tab.merge$Stop <- fit$pos[end(z.merge)]
     res.tab.merge$Width <- res.tab.merge$Stop - res.tab.merge$Start + 1
     for(i in 1:nrow(z.merge)){
-      f <- fit$fits[start(z.merge)[i]:end(z.merge)[i],]
+      f <- fit$fits[start(z.merge)[i]:end(z.merge)[i],, drop=FALSE]
       p <- fit$pos[start(z.merge)[i]:end(z.merge)[i]]
 
-      if(!is.null(data.range)){
-        f <- pmin(f, max(data.range))
-        f <- pmax(f, min(data.range))
-      }
       for(j in 1:(K-1)){
         for(l in (j+1):K){
-          g <- f[,j]-f[,l]
-          res.tab.merge[i, paste("AvgGap", j, l, sep="")] <- sum(diff(p)*rollmean(abs(g),2))/(max(p)-min(p))
+          if(length(p)==1){
+            res.tab.sep[i, paste("AvgGap", j, l, sep="")]  = abs(g <- f[,j]-f[,l])
+          }else{
+            g <- f[,j]-f[,l]
+            res.tab.merge[i, paste("AvgGap", j, l, sep="")] <- sum(diff(p)*rollmean(abs(g),2))/(max(p)-min(p))
+          }
         }
       }
     }
