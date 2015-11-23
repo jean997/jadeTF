@@ -42,14 +42,14 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
 
   if(nrow(z.merge) ==0 & nrow(z.sep) ==0) return(0)
 
-  res.tab.sep <- data.frame(matrix(nrow=nrow(z.sep), ncol=7+(K*(K-1)/2)))
-  names(res.tab.sep)[1:7] <- c("Chrom", "Start", "Stop", "Width", "Ncpg", "Window", "Partition")
+  res.tab.sep <- data.frame(matrix(nrow=nrow(z.sep), ncol=6+(K*(K-1)/2)))
+  names(res.tab.sep)[1:7] <- c("Chrom", "Start", "Stop", "Width", "Window", "Partition")
   for(i in 8:ncol(res.tab.sep)){
-    names(res.tab.sep)[i] <- paste("AvgGap", paste(idx_to_pair(i-7, K), collapse=""), sep="")
+    names(res.tab.sep)[i] <- paste("AvgGap", paste(idx_to_pair(i-6, K), collapse=""), sep="")
   }
 
-  res.tab.merge <- data.frame(matrix(nrow=nrow(z.merge), ncol=6+(K*(K-1)/2)))
-  names(res.tab.merge) <- c(names(res.tab.sep)[1:6], names(res.tab.sep)[8:(7+(K*(K-1)/2))])
+  res.tab.merge <- data.frame(matrix(nrow=nrow(z.merge), ncol=5+(K*(K-1)/2)))
+  names(res.tab.merge) <- c(names(res.tab.sep)[1:5], names(res.tab.sep)[8:(6+(K*(K-1)/2))])
 
   if(nrow(z.sep) > 0){
     res.tab.sep$Chrom <- chr
@@ -57,8 +57,7 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
 
     res.tab.sep$Start <- fit$pos[start(z.sep)]
     res.tab.sep$Stop <- fit$pos[end(z.sep)]
-    res.tab.sep$Width <- res.tab.sep$Stop - res.tab.sep$Start
-    res.tab.sep$Ncpg <- width(z.sep$ranges)
+    res.tab.sep$Width <- res.tab.sep$Stop - res.tab.sep$Start + 1
 
     for(i in 1:nrow(z.sep)){
       f <- fit$fits[start(z.sep)[i]:end(z.sep)[i],]
@@ -84,8 +83,7 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
     res.tab.merge$Window <- which.window
     res.tab.merge$Start <- fit$pos[start(z.merge)]
     res.tab.merge$Stop <- fit$pos[end(z.merge)]
-    res.tab.merge$Width <- res.tab.merge$Stop - res.tab.merge$Start
-    res.tab.merge$Ncpg <- width(z.merge$ranges)
+    res.tab.merge$Width <- res.tab.merge$Stop - res.tab.merge$Start + 1
     for(i in 1:nrow(z.merge)){
       f <- fit$fits[start(z.merge)[i]:end(z.merge)[i],]
       p <- fit$pos[start(z.merge)[i]:end(z.merge)[i]]
