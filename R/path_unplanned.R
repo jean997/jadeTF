@@ -153,7 +153,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		                " l1.total: ", l1.total[i], "\n")
 		converged[i] <- fit$converged
     #If not converged - backtrack until you are close enough to conver (experimental)
-		if(!converged[i] & (log.gammas[closest.idx]-log.gammas[i]) >= 4*buffer){
+		if(!converged[i] & (log.gammas[closest.idx]-log.gammas[i]) >= 2*buffer){
 		  new.gamma <- log.gammas[closest.idx] + (log.gammas[closest.idx]-log.gammas[i])/2
 		  cat("Backtracking: ", new.gamma)
 		  next
