@@ -91,10 +91,9 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 	  p <- dim(fit0$y)[1]
 	  K <- dim(fit0$y)[2]
 	  l1.total0 <- 0
-	  sep.total0 <- 0
+	  sep.total0 <- sum(unlist(sep0))
 	  for(j in 1:(K-1)){
 	    for(l in (j+1):K){
-	      sep.total0 <- sep.total0 + sum(sep0[[j]][[l-j]])
 	      l1.total0 <- l1.total0 + sum(abs(fit0$fits[,j] - fit0$fits[,l]))
 	    }
 	  }
@@ -152,7 +151,12 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		                " converged: ", fit$converged, " sep.total: ", sep.total[i],
 		                " l1.total: ", l1.total[i], "\n")
 		converged[i] <- fit$converged
-
+    #If not converged - backtrack until you are close enough to conver (experimental)
+		if(!converged[i] & (log.gammas[closest.idx]-log.gammas[i]) >= 2*buffer){
+		  new.gamma <- log.gammas[closest.idx] + (log.gammas[closest.idx]-log.gammas[i])/2
+		  cat("Backtracking: ", new.gamma)
+		  next
+		}
 		new.gamma <- find_new_gamma(l1.total, log.gammas, sep.total, n.fits,
 		                            start.step, tol, buffer, verbose=TRUE)
 
