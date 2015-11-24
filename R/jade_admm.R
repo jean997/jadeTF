@@ -231,7 +231,7 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
     dual.resid.norm.alpha <- sqrt(rowSums((rho.alpha*(t(alpha-alpha.old)%*%D))^2))
     if(adjust.rho.alpha){
       #Increase rho alphas?
-      if(any(primal.resid.norm.alpha/dual.resid.norm.alpha > mu)){
+      if(any(primal.resid.norm.alpha> dual.resid.norm.alpha*mu)){
         idx <- which(primal.resid.norm.alpha/dual.resid.norm.alpha > mu)
         for(j in idx){
           rho.alpha[j] <- tau.incr*rho.alpha[j]
@@ -239,9 +239,8 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
           theta.upd.qr.list[[j]] <- 0
           if(verbose) cat("Changing rho.alpha ",j, " ", rho.alpha[j], "\n")
         }
-      }
-      #Decrease rho alphas?
-      if(any(dual.resid.norm.alpha/primal.resid.norm.alpha > mu)){
+      }else if(any(dual.resid.norm.alpha > primal.resid.norm.alpha*mu)){
+        #Decrease rho alphas?
         idx <- which(dual.resid.norm.alpha/primal.resid.norm.alpha > mu)
         for(j in idx){
           rho.alpha[j] <- rho.alpha[j]/tau.decr
