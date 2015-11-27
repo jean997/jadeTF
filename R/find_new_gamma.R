@@ -1,12 +1,12 @@
 #Helper function for jade_path
 find_new_gamma <- function(l1.total, log.gammas, sep.total, n.fits,
-                           start.step, tol, buffer, verbose=TRUE){
+                           converged, start.step, tol, buffer, verbose=TRUE){
   sep.total0 <- sep.total[1]
   if(all(sep.total[-1] < sep.total0)) sep.total0 <- sep.total[2]
   l1.total0 <- l1.total[1]
 
   #Only base next gamma on fits with l1.total < l1.total0 (unless < 6)
-  keep.fits <- which(l1.total <= l1.total0 & is.finite(log.gammas))
+  keep.fits <- which(l1.total <= l1.total0 & is.finite(log.gammas) & converged)
   #Too early to use smoothing
   if(length(keep.fits) < 6){
     new.gamma <- max(log.gammas) + start.step

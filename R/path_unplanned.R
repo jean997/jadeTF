@@ -66,7 +66,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
       }else{
 			  #Find next gamma value
 			  new.gamma <- find_new_gamma(l1.total, log.gammas, sep.total, n.fits,
-			                              start.step, tol, buffer, verbose=TRUE)
+			                              converged, start.step, tol, buffer, verbose=TRUE)
 			  if(new.gamma$done) stop("Restarted but path seems to be done?")
 			  l1.gap <- new.gamma$l1.gap
 			  new.gamma <- new.gamma$new.gamma
@@ -159,7 +159,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		  next
 		}
 		new.gamma <- find_new_gamma(l1.total, log.gammas, sep.total, n.fits,
-		                            start.step, tol, buffer, verbose=TRUE)
+		                            converged, start.step, tol, buffer, verbose=TRUE)
 
 		if(new.gamma$done | max(log.gammas) ==log.gamma.max | i >= max.fits){
 		  if(verbose) cat("Finishing\n")
@@ -169,7 +169,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
     l1.gap <- new.gamma$l1.gap
     new.gamma <- new.gamma$new.gamma
 		#Count how many small steps we've taken. Take a big one if nesc.
-		if(abs(new.gamma - max(log.gammas)) > 2*buffer | min(abs(l1.total[i]-l1.total[-i])) > l1.gap ){
+		if(min(abs(log.gammas[-1]-new.gamma)) > 2*buffer| min(abs(l1.total[i]-l1.total[-i])) > l1.gap ){
 		  small.step.ct <- 0
 		  buffer <- buffer.orig
 		}else{
