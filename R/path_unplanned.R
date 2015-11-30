@@ -71,7 +71,9 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 			  l1.gap <- new.gamma$l1.gap
 			  new.gamma <- new.gamma$new.gamma
       }
-			closest.idx <- which.min(abs(log.gammas[-1]-new.gamma))+1
+      dist <- abs(log.gammas -new.gamma)
+      dist[!is.finite(log.gammas) | converged==0] <- Inf
+			closest.idx <- which.min(dist)
 			#cat("Theta init idx ", closest.idx, "\n")
 			theta0 <- fits[[closest.idx]]$fits
 			u.alpha0=fits[[closest.idx]]$u.alpha
@@ -157,6 +159,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		  new.gamma <- min(log.gammas[closest.idx], log.gammas[i]) + abs(log.gammas[closest.idx]-log.gammas[i])/2
 		  cat("Backtracking: ", new.gamma, "\n")
 		  log.gammas[i] <- new.gamma
+		  l1.total <- l1.total[-i]; sep.total <- sep.total[-i]; converged <- converged[-i]
 		  next
 		}
 		new.gamma <- find_new_gamma(l1.total, log.gammas, sep.total, n.fits,
@@ -183,7 +186,9 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		}
 		#Find the fit with the closest gamma to the next value.
 		#Use solutions from this fit as new theta0 value.
-		closest.idx <- which.min(abs(log.gammas[-1]-new.gamma))+1
+		dist <- abs(log.gammas -new.gamma)
+		dist[!is.finite(log.gammas) | converged==0] <- Inf
+		closest.idx <- which.min(dist)
 		#cat("Theta init idx ", closest.idx, "\n")
 		theta0 <- fits[[closest.idx]]$fits
 
