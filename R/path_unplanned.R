@@ -140,9 +140,9 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		fits[[i]] <- fit
 
 		#Things to keep track of: separation matrix, converged, l1.total, raw fits
-		sep.total <- c(sep.total, 0)
-		l1.total <- c(l1.total, 0)
-		converged <- c(converged, 0)
+		sep.total[i] <- 0
+		l1.total[i] <- 0
+
   	for(j in 1:(K-1)){
     	for(l in (j+1):K){
 				sep[[j]][[l-j]] <- cbind( sep[[j]][[l-j]], fit$sep[[j]][[l-j]])
@@ -159,9 +159,10 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		  new.gamma <- min(log.gammas[closest.idx], log.gammas[i]) + abs(log.gammas[closest.idx]-log.gammas[i])/2
 		  cat("Backtracking: ", new.gamma, "\n")
 		  log.gammas[i] <- new.gamma
-		  l1.total <- l1.total[-i]; sep.total <- sep.total[-i]; converged <- converged[-i]
+		  l1.total[i] <- NA; sep.total[i] <- NA; converged[i] <- NA
 		  next
 		}
+		#Otherwise find the next gamma value
 		new.gamma <- find_new_gamma(l1.total, log.gammas, sep.total, n.fits,
 		                            converged, start.step, tol, buffer, verbose=TRUE)
 
