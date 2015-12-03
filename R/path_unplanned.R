@@ -162,7 +162,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		  log.gammas[i] <- new.gamma
 		  l1.total[i] <- NA; sep.total[i] <- NA; converged[i] <- NA
 		  next
-		}else if(!converged){
+		}else if(!converged[i]){
 		  converged[i] <- 2
 		}
 		#Otherwise find the next gamma value
