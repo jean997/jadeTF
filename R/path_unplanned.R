@@ -158,10 +158,12 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		if(!converged[i] & abs(log.gammas[closest.idx]-log.gammas[i]) >= 2*buffer & i > 6 ){
 		  new.gamma <- min(log.gammas[closest.idx], log.gammas[i]) + abs(log.gammas[closest.idx]-log.gammas[i])/2
 		  cat("Backtracking: ", new.gamma, "\n")
-		  while(min(abs(new.gamma-log.gammas[-1])) < buffer) new.gamma <- new.gamma + buffer
+		  #while(min(abs(new.gamma-log.gammas[-1])) < buffer) new.gamma <- new.gamma + buffer
 		  log.gammas[i] <- new.gamma
 		  l1.total[i] <- NA; sep.total[i] <- NA; converged[i] <- NA
 		  next
+		}else if(!converged){
+		  converged[i] <- 2
 		}
 		#Otherwise find the next gamma value
 		new.gamma <- find_new_gamma(l1.total, log.gammas, sep.total, n.fits,
