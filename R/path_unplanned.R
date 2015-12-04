@@ -161,6 +161,11 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		  #while(min(abs(new.gamma-log.gammas[-1])) < buffer) new.gamma <- new.gamma + buffer
 		  log.gammas[i] <- new.gamma
 		  l1.total[i] <- NA; sep.total[i] <- NA; converged[i] <- NA
+		  for(j in 1:(K-1)){
+		    for(l in (j+1):K){
+		      sep[[j]][[l-j]] <-sep[[j]][[l-j]][, -i]
+		    }
+		  }
 		  next
 		}else if(!converged[i]){
 		  converged[i] <- 2
