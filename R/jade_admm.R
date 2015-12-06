@@ -267,7 +267,7 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
       cat((primal.resid.norm < e.primal & dual.resid.norm < e.dual), "\n")
       cat(max(abs(theta.old-theta)), "\n")
     }
-    if( primal.resid.norm < e.primal & dual.resid.norm < e.dual){
+    if( primal.resid.norm < e.primal & dual.resid.norm < e.dual & iter > 1){
       converged <- TRUE
       done <- TRUE
     }else if(iter > max.it){
