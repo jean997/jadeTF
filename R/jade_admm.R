@@ -63,7 +63,7 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
                       sds=NULL, fit.var=NULL, var.wts=NULL, subset.wts=NULL,
                       theta0=NULL, u.alpha0 = NULL, u.beta0=NULL,
                       verbose=FALSE, tol=0.001, max.it=1000,
-                      rho.alpha=NULL, rho.beta=1, adjust.rho.alpha=TRUE,
+                      rho.alpha=NULL, rho.beta=1, adjust.rho.alpha=TRUE, fix.rho.after=500,
                       tau.decr=2, tau.incr=2, mu=10, e.rel=1e-4, e.abs=1e-8){
 
   stopifnot(ord %in% c(0, 1, 2))
@@ -205,53 +205,6 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
     u.beta <- u_beta_update(u.beta, theta, beta)
     iter <- iter+1
 
-
-    #Adjust rho.beta
-    #Only the beta parts of residuals
-    primal.resid.norm.beta <- sqrt(sum((beta-theta)^2))
-    dual.resid.norm.beta <- sqrt(sum((rho.beta*(beta-beta.old))^2))
-    if(primal.resid.norm.beta/dual.resid.norm.beta > mu){
-      rho.beta <- tau.incr*rho.beta
-      u.beta <- u.beta/tau.incr
-      for(j in 1:K){
-        theta.upd.qr.list[[j]] <- 0
-      }
-      if(verbose) cat("Changing rho.beta ", rho.beta, "\n")
-    }else if(dual.resid.norm.beta/primal.resid.norm.beta > mu){
-      rho.beta <- rho.beta/tau.decr
-      u.beta <- u.beta*tau.decr
-      for(j in 1:K){
-        theta.upd.qr.list[[j]] <- 0
-      }
-      if(verbose) cat("Changing rho.beta ", rho.beta, "\n")
-    }
-
-    #Adjust rho.alphas - there is a different stepsize for each group
-    primal.resid.norm.alpha <- sqrt(colSums((D%*%theta-alpha)^2)) #Lenth K
-    dual.resid.norm.alpha <- sqrt(rowSums((rho.alpha*(t(alpha-alpha.old)%*%D))^2))
-    if(adjust.rho.alpha){
-      #Increase rho alphas?
-      if(any(primal.resid.norm.alpha> dual.resid.norm.alpha*mu)){
-        idx <- which(primal.resid.norm.alpha/dual.resid.norm.alpha > mu)
-        for(j in idx){
-          rho.alpha[j] <- tau.incr*rho.alpha[j]
-          u.alpha[,j] <- u.alpha[,j]/tau.incr
-          theta.upd.qr.list[[j]] <- 0
-          if(verbose) cat("Changing rho.alpha ",j, " ", rho.alpha[j], "\n")
-        }
-      }else if(any(dual.resid.norm.alpha > primal.resid.norm.alpha*mu)){
-        #Decrease rho alphas?
-        idx <- which(dual.resid.norm.alpha/primal.resid.norm.alpha > mu)
-        for(j in idx){
-          rho.alpha[j] <- rho.alpha[j]/tau.decr
-          u.alpha[,j] <- u.alpha[,j]*tau.decr
-          theta.upd.qr.list[[j]] <- 0
-          if(verbose) cat("Changing rho.alpha ",j, " ", rho.alpha[j], "\n")
-        }
-      }
-    }
-
-
     #Calculate stopping criteria
     dual.resid.norm <- sqrt( sum((rho.alpha*(t(alpha-alpha.old)%*%D))^2)  +  sum((rho.beta*(beta-beta.old))^2))
     primal.resid.norm <- sqrt(  sum((D%*%theta-alpha)^2)   +  sum((beta-theta)^2) )
@@ -270,12 +223,60 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
     if( primal.resid.norm < e.primal & dual.resid.norm < e.dual & iter > 1){
       converged <- TRUE
       done <- TRUE
+      break
     }else if(iter > max.it){
       done <- TRUE
+      break
     }
-    #if( iter %% 100 == 1){
-    #	if(verbose) cat(iter, " ", primal.resid.norm, " ", dual.resid.norm, "\n", e.primal, e.dual, "\n")
-    #}
+
+
+    if(iter < fix.rho.after){
+      #Adjust rho.beta
+      #Only the beta parts of residuals
+      primal.resid.norm.beta <- sqrt(sum((beta-theta)^2))
+      dual.resid.norm.beta <- sqrt(sum((rho.beta*(beta-beta.old))^2))
+      if(primal.resid.norm.beta/dual.resid.norm.beta > mu){
+        rho.beta <- tau.incr*rho.beta
+        u.beta <- u.beta/tau.incr
+        for(j in 1:K){
+          theta.upd.qr.list[[j]] <- 0
+        }
+        if(verbose) cat("Changing rho.beta ", rho.beta, "\n")
+      }else if(dual.resid.norm.beta/primal.resid.norm.beta > mu){
+        rho.beta <- rho.beta/tau.decr
+        u.beta <- u.beta*tau.decr
+        for(j in 1:K){
+          theta.upd.qr.list[[j]] <- 0
+        }
+        if(verbose) cat("Changing rho.beta ", rho.beta, "\n")
+      }
+      #Adjust rho.alphas - there is a different stepsize for each group
+      if(adjust.rho.alpha){
+        primal.resid.norm.alpha <- sqrt(colSums((D%*%theta-alpha)^2)) #Lenth K
+        dual.resid.norm.alpha <- sqrt(rowSums((rho.alpha*(t(alpha-alpha.old)%*%D))^2))
+        #Increase rho alphas?
+        if(any(primal.resid.norm.alpha> dual.resid.norm.alpha*mu)){
+          idx <- which(primal.resid.norm.alpha/dual.resid.norm.alpha > mu)
+          for(j in idx){
+            rho.alpha[j] <- tau.incr*rho.alpha[j]
+            u.alpha[,j] <- u.alpha[,j]/tau.incr
+            theta.upd.qr.list[[j]] <- 0
+            if(verbose) cat("Changing rho.alpha ",j, " ", rho.alpha[j], "\n")
+          }
+        }else if(any(dual.resid.norm.alpha > primal.resid.norm.alpha*mu)){
+          #Decrease rho alphas?
+          idx <- which(dual.resid.norm.alpha/primal.resid.norm.alpha > mu)
+          for(j in idx){
+            rho.alpha[j] <- rho.alpha[j]/tau.decr
+            u.alpha[,j] <- u.alpha[,j]*tau.decr
+            theta.upd.qr.list[[j]] <- 0
+            if(verbose) cat("Changing rho.alpha ",j, " ", rho.alpha[j], "\n")
+          }
+        }
+      }
+    }
+
+
   }
   sep <- get_sep(beta, tol)
 
