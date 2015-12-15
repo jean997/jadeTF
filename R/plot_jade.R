@@ -163,8 +163,8 @@ plot_jade <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
 
 
 gg_sep_rect <- function(sep.tab, color="blue", alpha=0.2){
-  m.lower <- sep.tab$Start-1
-  m.upper <- sep.tab$Stop+1
+  m.lower <- sep.tab$PlotStart
+  m.upper <- sep.tab$PlotStop
   M <- data.frame(m.lower, m.upper)
   names(M) <- c("m.lower", "m.upper")
 

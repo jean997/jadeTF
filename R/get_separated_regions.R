@@ -41,21 +41,23 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
 
   if(nrow(z.merge) ==0 & nrow(z.sep) ==0) return(0)
 
-  res.tab.sep <- data.frame(matrix(nrow=nrow(z.sep), ncol=6+(K*(K-1)/2)))
-  names(res.tab.sep)[1:6] <- c("Chrom", "Start", "Stop", "Width", "Window", "Partition")
-  for(i in 7:ncol(res.tab.sep)){
-    names(res.tab.sep)[i] <- paste("AvgGap", paste(idx_to_pair(i-6, K), collapse=""), sep="")
+  res.tab.sep <- data.frame(matrix(nrow=nrow(z.sep), ncol=8+(K*(K-1)/2)))
+  names(res.tab.sep)[1:8] <- c("Chrom", "Start", "PlotStart", "Stop", "PlotStop", "Width", "Window", "Partition")
+  for(i in 9:ncol(res.tab.sep)){
+    names(res.tab.sep)[i] <- paste("AvgGap", paste(idx_to_pair(i-8, K), collapse=""), sep="")
   }
 
-  res.tab.merge <- data.frame(matrix(nrow=nrow(z.merge), ncol=5+(K*(K-1)/2)))
-  names(res.tab.merge) <- c(names(res.tab.sep)[1:5], names(res.tab.sep)[7:(6+(K*(K-1)/2))])
+  res.tab.merge <- data.frame(matrix(nrow=nrow(z.merge), ncol=7+(K*(K-1)/2)))
+  names(res.tab.merge) <- names(res.tab.sep)[-8]
 
   if(nrow(z.sep) > 0){
     res.tab.sep$Chrom <- chr
     res.tab.sep$Window <- which.window
 
     res.tab.sep$Start <- fit$pos[start(z.sep)]
+    res.tab.sep$PlotStart <- fit$pos[pmax(1, start(z.sep)-1)]
     res.tab.sep$Stop <- fit$pos[end(z.sep)]
+    res.tab.sep$PlotStop <- fit$pos[pmin(length(fit$pos), end(z.sep)+1)]
     res.tab.sep$Width <- res.tab.sep$Stop - res.tab.sep$Start + 1
 
     for(i in 1:nrow(z.sep)){
@@ -81,7 +83,9 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
     res.tab.merge$Chrom <- chr
     res.tab.merge$Window <- which.window
     res.tab.merge$Start <- fit$pos[start(z.merge)]
+    res.tab.merge$PlotStart <- fit$pos[pmax(1, start(z.merge)-1)]
     res.tab.merge$Stop <- fit$pos[end(z.merge)]
+    res.tab.merge$PlotStop <- fit$pos[pmin(length(fit$pos), end(z.merge)+1)]
     res.tab.merge$Width <- res.tab.merge$Stop - res.tab.merge$Start + 1
     for(i in 1:nrow(z.merge)){
       f <- fit$fits[start(z.merge)[i]:end(z.merge)[i],, drop=FALSE]
