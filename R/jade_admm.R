@@ -152,7 +152,10 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
   }
 
   #Default starting value for step size - must be after lambda is chosen
-  if(is.null(rho.alpha)) rho.alpha <- lambda*(((max(pos)-min(pos))/p)^(ord-1))
+  if(is.null(rho.alpha)){
+    rho.alpha <- lambda*(((max(pos)-min(pos))/p)^(ord-1))
+    rho.alpha[lambda==0] <- 1
+  }
 
   #Prepare for ADMM algorithm
   #Build \tilde{D}^{k, x}
@@ -192,6 +195,7 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
 
   #Start
   while(!done){
+    if(verbose) cat(iter, " ")
     theta.old <- theta
     beta.old <- beta
     alpha.old <- alpha
@@ -235,14 +239,14 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
       #Only the beta parts of residuals
       primal.resid.norm.beta <- sqrt(sum((beta-theta)^2))
       dual.resid.norm.beta <- sqrt(sum((rho.beta*(beta-beta.old))^2))
-      if(primal.resid.norm.beta/dual.resid.norm.beta > mu){
+      if(primal.resid.norm.beta > mu*dual.resid.norm.beta){
         rho.beta <- tau.incr*rho.beta
         u.beta <- u.beta/tau.incr
         for(j in 1:K){
           theta.upd.qr.list[[j]] <- 0
         }
         if(verbose) cat("Changing rho.beta ", rho.beta, "\n")
-      }else if(dual.resid.norm.beta/primal.resid.norm.beta > mu){
+      }else if(dual.resid.norm.beta > mu*primal.resid.norm.beta ){
         rho.beta <- rho.beta/tau.decr
         u.beta <- u.beta*tau.decr
         for(j in 1:K){
@@ -263,7 +267,8 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
             theta.upd.qr.list[[j]] <- 0
             if(verbose) cat("Changing rho.alpha ",j, " ", rho.alpha[j], "\n")
           }
-        }else if(any(dual.resid.norm.alpha > primal.resid.norm.alpha*mu)){
+        }
+        if(any(dual.resid.norm.alpha > primal.resid.norm.alpha*mu)){
           #Decrease rho alphas?
           idx <- which(dual.resid.norm.alpha/primal.resid.norm.alpha > mu)
           for(j in idx){
