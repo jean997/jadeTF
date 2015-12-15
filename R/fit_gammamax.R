@@ -34,8 +34,7 @@ fit_gammamax <- function(y, lambda, pos, sample.size, sds, ord,
   fit <- fit_one(new.y, new.lam, pos, new.sigma, 1, ord,
                  lambda2=new.lam2, metric=metric, truncate.metric=truncate.metric, shift=shift)
   if(is.null(lambda)){
-    l <- fit$lambda/sum(sample.size)
-    lambda <- sample.size * l
+    lambda <- rep(fit$lambda/K, K)
   }
 
   fit <- matrix(rep(fit$fit, K), byrow=FALSE, nrow=p)
