@@ -151,8 +151,8 @@ jade_permute_results <- function(save.prefix, gammas, n.perm, tol){
     my.idx <- match(round(path.perm$gammas, digits=8), round(c(0, gammas), digits=8))
     if(length(my.idx) != length(path.perm$gammas)) cat("Warning: Gammas may not match correctly")
     if(!all.equal(my.idx, 1:length(my.idx))) cat("Warning: Gammas may not match correctly")
-    sep.total[ my.idx, j] <- s
-    sep.total[c(0, gammas) > max(path.perm$gammas), j] <- 0
+    sep.total[ my.idx, i] <- s
+    sep.total[c(0, gammas) > max(path.perm$gammas), i] <- 0
     i <- i+1
   }
   cat("\n")
