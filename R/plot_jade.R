@@ -1,5 +1,5 @@
 
-plot_data <- function(counts, reads, pos, ylim=c(0, 1),
+plot_data <- function(counts, reads, pos, ylim=c(0, 1), cols=NULL,
                       range=NULL, xlab="Position", ylab="Methylation Proportion"){
   if(!is.matrix(counts)){
 				K=1
@@ -14,9 +14,10 @@ plot_data <- function(counts, reads, pos, ylim=c(0, 1),
   if(K==1) sv <- TRUE
   else sv <- FALSE
 
-	cols=c("black", "red3", "blue2")
-	if(K >3) cols <- c(cols, 4:(K-3))
-
+	if(is.null(cols)){
+	  cols=c("black", "red3", "blue2")
+	  if(K >3) cols <- c(cols, 4:(K-3))
+	}
 	if(is.null(range)){
 		range <- range(pos)
 		idx <- 1:p
@@ -30,13 +31,13 @@ plot_data <- function(counts, reads, pos, ylim=c(0, 1),
 
 	df <- data.frame(pos, data.full, reads)
   names(df) <- c("pos", paste("y", 1:K, sep=""), paste("r", 1:K, sep=""))
-	h <- ggplot(df)
+	h <- ggplot(df) + theme_bw()
   for(j in 1:K){
 			h <- h + geom_point(aes_string(x="pos", y=paste("y", j, sep=""),
 			                               size=paste("r", j, sep="")), col=cols[j], alpha=1)
   }
-  return(h + scale_size_area() + ylim(ylim)+ labs(y=ylab, x=xlab) + theme(legend.position="none",
-                                                   text=element_text(size=20))
+  return(h + scale_size_area() + ylim(ylim)+ labs(x=xlab, y=ylab) + theme(legend.position="none",
+                                                   text=element_text(size=15))
          )
 }
 
@@ -121,7 +122,7 @@ plot_jade <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
 
 	df <- data.frame(pos, fits, window.coverage, data.full, reads.full)
   names(df) <- c("pos", paste("t", 1:K, sep=""), paste("w", 1:K, sep=""), paste("y", 1:K, sep=""), paste("r", 1:K, sep=""))
-	h <- ggplot(df)
+	h <- ggplot(df) + theme_bw()
 
 	#Background colors
 	if(!is.null(sep.tab)){
@@ -145,18 +146,18 @@ plot_jade <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
 	  R <- R + theme(legend.position="none",
 	                 axis.title.x=element_blank(),
 	                 axis.title.y=element_blank(),
-	                 text=element_text(size=20))
+	                 text=element_text(size=15))
 	}else if(is.null(xlab)){
 	  R <- R + theme(legend.position="none",
 	                 axis.title.x=element_blank(),
-	                 text=element_text(size=20)) + labs(y=ylab)
+	                 text=element_text(size=15)) + labs(y=ylab)
 	}else if(is.null(ylab)){
 	  R <- R + theme(legend.position="none",
 	                 axis.title.y=element_blank(),
-	                 text=element_text(size=20)) + labs(x=xlab)
+	                 text=element_text(size=15)) + labs(x=xlab)
 	}else{
 	  R <- R + theme(legend.position="none",
-	                 text=element_text(size=20)) + labs(x=xlab, y=ylab)
+	                 text=element_text(size=15)) + labs(x=xlab, y=ylab)
 	}
 	return(R)
 }
