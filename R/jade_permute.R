@@ -48,7 +48,7 @@ jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
   #Info about the data
   n <- dim(Y)[2]
   p <- dim(Y)[1]
-  sotpifnot(sum(sample.size) == n)
+  stopifnot(sum(sample.size) == n)
   K <- length(sample.size)
   grp.start <- c(1, cumsum(sample.size)[-K]+1)
   grp.stop <- cumsum(sample.size)
