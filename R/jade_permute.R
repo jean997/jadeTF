@@ -23,10 +23,10 @@
 jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
                          tol=1e-3, which.perm=1:100, sds.mat=NULL,
                          n.rep.fit.var=NULL, adjust.rho.alpha=TRUE,
-                         sd.type=c("Mat", "Orig", "Binomial", "Poisson", "EqualFromData", "Mat2"), READS=NULL){
+                         sd.type=c("Mat2", "Binomial", "Poisson", "EqualFromData", "Mat", "Orig"), READS=NULL){
   sd.type <- match.arg(sd.type)
   if(sd.type=="Mat" | sd.type=="Mat2"){
-    if(is.null(sds.mat)) stop("For Mat sd.type please provide sds.mat")
+    if(is.null(sds.mat)) stop("For Mat sd.type please provide matrix sds.mat")
     stopifnot(all(dim(Y)==dim(sds.mat)))
     stopifnot(all(sds.mat > 0))
     V <- sds.mat^2
@@ -48,7 +48,7 @@ jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
   #Info about the data
   n <- dim(Y)[2]
   p <- dim(Y)[1]
-
+  sotpifnot(sum(sample.size) == n)
   K <- length(sample.size)
   grp.start <- c(1, cumsum(sample.size)[-K]+1)
   grp.stop <- cumsum(sample.size)
@@ -80,10 +80,10 @@ jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
         sds.perm[,i]<- r$sds
       }else if(sd.type=="Mat2"){
         Vi <- V.perm[, grp.start[i]:grp.stop[i]]
-        r <- mat.func(Yi, Vi)
+        r <- mat.func2(Yi, Vi)
         y.perm[,i] <- r$y
         sds.perm[,i]<- r$sds
-      }else if(sd.type == "Orig" & is.null(READS)){
+      }else if(sd.type=="Orig"){
         y.perm[,i] <- rowSums(Yi)/sample.size[i]
       }else if(sd.type=="Binomial" | !is.null(READS)){
         Ri <- READS.perm[, grp.start[i]:grp.stop[i]]
