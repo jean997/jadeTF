@@ -196,6 +196,23 @@ get_sep_total <- function(path, tol){
   return(sep.total)
 }
 
+#' Calculate total number of separated regions for each fit in a path
+#' @param path Path of JADE fits
+#' @param tol Tolerance for determining separation
+#' @return A vector of same length as path$gammas
+#' @export
+get_regions_total <- function(path, tol){
+  reg.total <- rep(NA, length(path$JADE_fits))
+  sep1 <- rowSums(matrix(unlist(get_sep(path$JADE_fits[[1]]$fits, tol=tol))))
+  reg.total[1] <- sum(rle(sep1)$values)
+  r <- unlist( lapply(path$JADE_fits[-1],  FUN = function(f){
+    sep <- rowSums(matrix(unlist(get_sep(f$beta, tol=tol))))
+    reg <- sum(rle(sep)$values)
+    return(reg)}))
+  reg.total[-1] <- r
+  return(reg.total)
+}
+
 #' Determine which pairs of sites are separated from a jade_gd object.
 #' @param obj A jade_gd object
 #' for a \code{jade_admm} object use \code{fits=obj$beta}.
