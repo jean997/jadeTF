@@ -26,7 +26,6 @@ library(ggplot2)
 library(IRanges)
 ```
 ```{r, fig.show='hold', fig.width=6, fig.height=3, echo=FALSE}
-data(prof_1, package = "jadeTF")
 ggplot(data.frame(prof_1), aes(x=1:100)) +
   geom_line(aes(y=X1)) + 
   geom_line(aes(y=X2), color="blue") + 
@@ -142,8 +141,7 @@ fit_var <- cbind(v1$var, v2$var)
 Follow the same procedure as before -- fit first at `gamma = 0` and then for a grid of gamma values.
 ```{r, eval=FALSE}
 fit0_wts <- jade_admm(y, gamma=0, ord=2, sample.size = c(10, 15), fit.var=fit_var)
-path_wts <- jade_path(fit0 = fit0_wts, n.fits = 100, out.file = "example_path_wts.RData")
-path_planned_wts <- jade_path_planned(fit0=fit0_wts, out.file="example_path_planned_wts.RData", log.gamma.start=0.05, log.gamma.stop=1.7, n.fits=100)
+path_wts <- jade_path(fit0 = fit0_wts, n.fits = 100, out.file = "example_path_wts.RData", tol=1e-3)
 ```
 
 Cross validation for the weighted analysis:
