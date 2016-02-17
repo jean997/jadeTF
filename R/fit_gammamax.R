@@ -1,6 +1,6 @@
 #Fit JADE at gamma max
 fit_gammamax <- function(y, lambda, pos, sample.size, sds, ord,
-                         lambda2=NULL, metric=c("mse", "abs", "pois"), truncate.metric=Inf, shift=NULL){
+                         lambda2=NULL, metric=c("mse", "abs", "pois")){
   metric <- match.arg(metric)
   p <- dim(y)[1]
   K <- dim(y)[2]
@@ -33,7 +33,7 @@ fit_gammamax <- function(y, lambda, pos, sample.size, sds, ord,
     new.lam2 <- sum(lambda2)
   }
   fit <- fit_one(new.y, new.lam, pos, new.sigma, 1, ord,
-                 lambda2=new.lam2, metric=metric, truncate.metric=truncate.metric, shift=shift)
+                 lambda2=new.lam2, metric=metric)
   if(is.null(lambda)){
     lambda <- rep(fit$lambda/K, K)
   }

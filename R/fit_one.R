@@ -4,7 +4,7 @@
 #Minimize N/(2) || (y - \theta)/sds ||^2 + \lambda_1||D\theta||_1 + \lambda_2||\theta||_1
 #Equivalent to 1/2 || w*(y - \theta) ||^2 + \lambda_1/N||D\theta||_1 + \lambda2/N||\theta||_1
 fit_one <- function(y, lambda, pos, sds, sample.size, ord,
-                    lambda2=0, metric=c("mse", "abs", "pois"), truncate.metric=Inf, shift=NULL){
+                    lambda2=0, metric=c("mse", "abs", "pois")){
 
   metric <- match.arg(metric)
 
@@ -23,8 +23,7 @@ fit_one <- function(y, lambda, pos, sds, sample.size, ord,
 
   if(is.na(lambda)){
     cv <- cv_pred.genlasso(obj=tfit.out, n.folds = 5, mode = "predict",
-                           lambda2=lambda2/sample.size, metric=metric,
-                           truncate.metric=truncate.metric, shift=shift)
+                           lambda2=lambda2/sample.size, metric=metric)
     l <- cv$lambda.1se #l = lambda_1/(N*w^2) or lambda_1/N
     lambda <- l*sample.size
     if(equal.wts) lambda <- lambda*(wts[1])^2

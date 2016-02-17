@@ -1,7 +1,7 @@
 
 #Fit JADE at gamma=0
 fit_gamma0 <- function(y, lambda, pos, sample.size, sds, ord,
-                       lambda2=NULL, metric=c("mse", "abs", "pois"), truncate.metric=Inf, shift=NULL){
+                       lambda2=NULL, metric=c("mse", "abs", "pois")){
   p <- dim(y)[1]
   K <- dim(y)[2]
 
@@ -23,7 +23,7 @@ fit_gamma0 <- function(y, lambda, pos, sample.size, sds, ord,
   fit <- matrix(0, p, K)
   for(j in 1:K){
     f <- fit_one(y[,j], lambda[j], pos, sds[,j], sample.size[j], ord=ord,
-                 lambda2=lambda2[j], metric=metric, truncate.metric=truncate.metric, shift=shift)
+                 lambda2=lambda2[j], metric=metric)
     fit[,j] <- f$fit
     if(is.na(lambda[j])){
       lambda[j] <- f$lambda

@@ -50,7 +50,7 @@ jade_gd <- function(y, gamma, pos = NULL, scale.pos=NULL,
 													sds=NULL, fit.var=NULL, var.wts=NULL, subset.wts=NULL,
                           theta0=NULL, duals0=NULL, verbose=FALSE, sep.tol=1e-3,
 													max.it=1000, thresh=1e-8, stepsize=NULL,
-													eps=0, cv.metric=c("mse", "abs", "pois"), truncate.metric=100, shift=NULL, debug=FALSE){
+													eps=0, cv.metric=c("mse", "abs", "pois"), debug=FALSE){
 
   metric <- match.arg(cv.metric)
 
@@ -127,7 +127,7 @@ jade_gd <- function(y, gamma, pos = NULL, scale.pos=NULL,
   if(verbose) cat("Fitting at max value of gamma.\n")
   if(verbose & is.null(lambda1)) cat("Lambda1 will by chosen by cross validation.\n")
   theta.max <- fit_gammamax(y,  lambda1, pos, sample.size, sds, ord,
-                      lambda2=lambda2, metric=metric, truncate.metric=truncate.metric, shift=shift)
+                      lambda2=lambda2, metric=metric)
   if(is.null(lambda1)) lambda1 <- theta.max$lambda
   theta.max <- theta.max$fit
   theta.min <- fit_gamma0(y,  lambda1,  pos, sample.size, sds, ord,

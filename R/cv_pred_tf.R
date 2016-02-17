@@ -3,8 +3,8 @@
   #or produced with jadeTF::trendfilter_weights
 
 cv_pred.genlasso <- function(obj, n.folds=5, mode=c("predict", "approx"),
-                             lambda2=0, metric=c("mse", "abs", "pois"), truncate.metric=Inf,
-                             shift=NULL, zero.tol=1e-11){
+                             lambda2=0, metric=c("mse", "abs", "pois"),
+                             zero.tol=1e-11){
 	mode <- match.arg(mode)
 	metric <- match.arg(metric)
 	stopifnot("genlasso" %in% class(obj))
@@ -71,11 +71,9 @@ cv_pred.genlasso <- function(obj, n.folds=5, mode=c("predict", "approx"),
 		}else if(metric=="abs"){
 			test.loss <-abs(obj$y[ote]-co.test)
 		}else if(metric=="pois"){
-			if(is.null(shift) & any(obj$y < 0)) shift <- -1*min(obj$y)
-				else if(is.null(shift)) shift <- 0
-			test.loss <- -(obj$y[ote]+shift)*log(co.test+shift)+co.test+shift
+			test.loss <- -obj$y[ote]*log(co.test)+co.test #- lfactorial(obj$y[ote])
 		}
-		test.loss <- pmin(test.loss, truncate.metric)
+
 		#Average over test points
 		avg.test.loss[i,] <- colMeans(test.loss)
 	}
