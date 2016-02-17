@@ -4,9 +4,10 @@
 \alias{jade_permute}
 \title{Run JADE with permuted group assignments}
 \usage{
-jade_permute(Y, fit0, gammas, save.prefix, tol = 0.001, which.perm = 1:100,
-  n.rep.fit.var = NULL, sd.type = c("Orig", "Equal", "Binomial", "Poisson"),
-  READS = NULL)
+jade_permute(Y, fit0, gammas, save.prefix, sample.size = NULL, tol = 0.001,
+  which.perm = 1:100, sds.mat = NULL, n.rep.fit.var = NULL,
+  adjust.rho.alpha = TRUE, sd.type = c("Mat2", "Binomial", "Poisson",
+  "EqualFromData", "Mat", "Orig"), READS = NULL)
 }
 \arguments{
 \item{Y}{Full data matrix (p by n)}

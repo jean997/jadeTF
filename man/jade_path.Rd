@@ -4,17 +4,17 @@
 \alias{jade_path}
 \title{Fit JADE at a sequence of gamma values without knowing much about where to start.}
 \usage{
-jade_path(fit0, n.fits, out.file, temp.file = NULL, max.it = 10000,
+jade_path(n.fits, out.file, fit0 = NULL, temp.file = NULL, max.it = 10000,
   log.gamma.min = -3, log.gamma.max = 20, start.step = 0.03,
   tol = 0.001, max.fits = 10 * n.fits, buffer = 0.001,
   restart.file = NULL, verbose = TRUE, adjust.rho.alpha = TRUE)
 }
 \arguments{
-\item{fit0}{Either a jade object or a file containing a jade object produced by fitting with \code{gamma=0}}
-
 \item{n.fits}{Desired number of fits along the path. Actual results may vary.}
 
 \item{out.file}{Name of a file to save the results to.}
+
+\item{fit0}{Either a jade object or a file containing a jade object produced by fitting with \code{gamma=0}}
 
 \item{temp.file}{Name a temp file. If missing will use a default based on \code{out.file}.
 This file will be deleted at the end.}

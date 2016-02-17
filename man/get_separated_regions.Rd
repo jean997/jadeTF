@@ -5,7 +5,7 @@
 \title{Get a table of separated regions.}
 \usage{
 get_separated_regions(fit, which.window = 1, chr = "chr22",
-  new.tol = NULL, data.range = NULL)
+  new.tol = NULL, min.gapwidth = 2, min.width = 1)
 }
 \arguments{
 \item{fit}{A JADE fit.}
@@ -13,6 +13,10 @@ get_separated_regions(fit, which.window = 1, chr = "chr22",
 \item{which.window,chr}{Will be put in the table. Can be useful for writing other files.}
 
 \item{new.tol}{Recalculate separation using a different tolerance.}
+
+\item{min.gapwidth}{Merge regions separated by fewer than this many sites}
+
+\item{min.width}{Report regions spanning at least this many sites.}
 }
 \value{
 A list of two tables of separated regions.

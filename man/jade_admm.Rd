@@ -8,8 +8,9 @@ jade_admm(y, gamma, pos = NULL, scale.pos = NULL, lambda = NULL,
   sample.size = NULL, ord = 2, sds = NULL, fit.var = NULL,
   var.wts = NULL, subset.wts = NULL, theta0 = NULL, u.alpha0 = NULL,
   u.beta0 = NULL, verbose = FALSE, tol = 0.001, max.it = 1000,
-  rho.alpha = NULL, rho.beta = 1, adjust.rho.alpha = FALSE,
-  tau.decr = 2, tau.incr = 2, mu = 10, e.rel = 1e-04, e.abs = 1e-08)
+  cv.metric = c("mse", "abs", "pois"), rho.alpha = NULL, rho.beta = 1,
+  adjust.rho.alpha = TRUE, fix.rho.after = 500, tau.decr = 2,
+  tau.incr = 2, mu = 10, e.rel = 1e-04, e.abs = 1e-08)
 }
 \arguments{
 \item{y}{Data matrix of size p x K. May contain NA values but may not contain rows which are all NA.}
@@ -35,7 +36,7 @@ Only the relative sizes of \code{sds} is important.}
 \item{fit.var}{Matrix of size p x K of estimated variance of trendfiltering fits.
 This will be used to construct the pairwise weight matrices \eqn{W}{W}.
 Currently this is only supported for \eqn{K=2}.
-\code{fit.var} can be estimated by bootstrapping. See \code{\link{bs_var}}.}
+\code{fit.var} can be estimated by bootstrapping. See \code{\link{bs_var_tf}}.}
 
 \item{var.wts}{If \code{fit.var} is not provided, the diagonal
 elements of \eqn{W} may be specified here.
@@ -59,6 +60,9 @@ If not provided the solution at \eqn{\gamma = 0} is used.}
 Separation can be recalculated with a different value of \code{tol} using \code{\link{get_sep}}.}
 
 \item{max.it}{Maximum number of iterations.}
+
+\item{cv.metric}{Metric to use for selection of lambda -
+can be "mse"(mean squared error), "abs"(absolute value), or "pois"(Poisson).}
 
 \item{rho.alpha,rho.beta}{ADMM step sizes.
 \code{rho.alpha} has length K and \code{rho.beta} is a constant.
