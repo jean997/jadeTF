@@ -23,8 +23,9 @@
 #' }
 #' @export
 cv_err_wts <- function(orig.path, cv.path.list=NULL,
-                       use.converged.only=TRUE, control.l1=TRUE){
-
+                       use.converged.only=TRUE, control.l1=TRUE,
+                       metric=c("mse", "pois")){
+  metric <- match.arg(metric)
   if(class(orig.path)=="character"){
     orig.path.file <- orig.path
     orig.path <- getobj(orig.path.file)
@@ -71,7 +72,7 @@ cv_err_wts <- function(orig.path, cv.path.list=NULL,
 		cv.y <- path$JADE_fits[[1]]$y
 
 
-		#convergence
+		#Filter out poorly converged fits
 		converged[[(i+1)]] <- path$converged
 
 		keep.fits[[(i+1)]] <- rep(TRUE, length(path$gammas))
@@ -90,9 +91,15 @@ cv_err_wts <- function(orig.path, cv.path.list=NULL,
 		test.idx <- cv.na[!cv.na %in% orig.na]
 		n.test <- c(n.test, length(test.idx))
 
-		cv.err <- unlist( lapply(path$JADE_fits, FUN=function(x, orig.y, orig.sds, test.idx){
-					sum(( (x$fits[test.idx]-orig.y[test.idx])/orig.sds[test.idx] )^2)
-					}, orig.y=orig.y, orig.sds=orig.sds, test.idx=test.idx))
+		if(metric=="mese"){
+		    cv.err <- unlist( lapply(path$JADE_fits, FUN=function(x, orig.y, orig.sds, test.idx){
+					    sum(( (x$fits[test.idx]-orig.y[test.idx])/orig.sds[test.idx] )^2)
+					    }, orig.y=orig.y, orig.sds=orig.sds, test.idx=test.idx))
+		}else if(metric=="pois"){
+		  cv.err <- unlist( lapply(path$JADE_fits, FUN=function(x, orig.y, test.idx){
+		    sum(-orig.y[test.idx]*log(x$fits[test.idx])+x$fits[test.idx])
+		  }, orig.y=orig.y, test.idx=test.idx))
+		}
 
 		cv.err.l1[i,] <- approx(x=path$l1.total[keep.fits[[(i+1)]]],
 		                        y=cv.err[keep.fits[[(i+1)]]],
