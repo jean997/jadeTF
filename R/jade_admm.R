@@ -69,7 +69,7 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
                       tau.decr=2, tau.incr=2, mu=10, e.rel=1e-4, e.abs=1e-8){
   #Arguments
   stopifnot(ord %in% c(0, 1, 2))
-  metric <- match.arg(metric)
+  cv.metric <- match.arg(cv.metric)
   if(!is.null(var.wts) & !is.null(fit.var)) stop("Please provide only one of var.wts or fit.var")
   if(class(y)=="numeric"){
     p <- length(y)
@@ -131,7 +131,7 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
 
   if(verbose) cat("Fitting at max value of gamma.\n")
   if(verbose & is.null(lambda)) cat("Lambda will by chosen by cross validation.\n")
-  theta.max <- fit_gammamax(y=y,  lambda=lambda, pos=pos, sample.size=sample.size, sds=sds, ord=ord, metric=metric)
+  theta.max <- fit_gammamax(y=y,  lambda=lambda, pos=pos, sample.size=sample.size, sds=sds, ord=ord, metric=cv.metric)
   if(is.null(lambda)) lambda <- theta.max$lambda
   theta.max <- theta.max$fit
 
