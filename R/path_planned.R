@@ -164,13 +164,13 @@ jade_path_planned <- function(fit0, out.file, log.gamma.start=NULL,
 		g <- 10^log.gammas[i]
 		#if(verbose) cat("Gamma", g, "\n")
 		if(alg=="admm"){
-		  fit <- jade_admm(y=fit0$y, gamma=g, pos=fit0$pos, scale.pos=fit0$scale.pos,
-		                   lambda=fit0$lambda, sample.size=fit0$sample.size, ord=fit0$ord,
+		  fit <- jade_admm(y=fit0$y, gamma=g, pos=fit0$pos, lambda=fit0$lambda,
+		                   sample.size=fit0$sample.size, ord=fit0$ord,
 		                   sds=fit0$sds, fit.var=fit0$fit.var,
 		                   theta0=theta0, u.alpha0=u.alpha0, u.beta0=u.beta0, rho.beta=rho.beta,
 		                   rho.alpha=rho.alpha, tol=tol,  max.it=max.it, adjust.rho.alpha=adjust.rho.alpha)
 		}else if(alg=="gd"){
-		  fit <- jade_gd(y=fit0$y, gamma=g, pos=fit0$pos, scale.pos=fit0$scale.pos,
+		  fit <- jade_gd(y=fit0$y, gamma=g, pos=fit0$pos,
 		                 lambda1=fit0$lambda1, lambda2=fit0$lambda2,
 		                 sample.size=fit0$sample.size, ord=fit0$ord,
 		                 sds=fit0$sds, fit.var=fit0$fit.var,

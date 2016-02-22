@@ -4,12 +4,12 @@
 \alias{jade_gd}
 \title{Fit JADE using gradient descent}
 \usage{
-jade_gd(y, gamma, pos = NULL, scale.pos = NULL, lambda1 = NULL,
-  lambda2 = NULL, sample.size = NULL, ord = 0, sds = NULL,
-  fit.var = NULL, var.wts = NULL, subset.wts = NULL, theta0 = NULL,
-  duals0 = NULL, verbose = FALSE, sep.tol = 0.001, max.it = 1000,
-  thresh = 1e-08, stepsize = NULL, eps = 0, cv.metric = c("mse", "abs",
-  "pois"), truncate.metric = 100, shift = NULL, debug = FALSE)
+jade_gd(y, gamma, pos = NULL, lambda1 = NULL, lambda2 = NULL,
+  sample.size = NULL, ord = 0, sds = NULL, fit.var = NULL,
+  var.wts = NULL, subset.wts = NULL, theta0 = NULL, duals0 = NULL,
+  verbose = FALSE, sep.tol = 0.001, max.it = 1000, thresh = 1e-08,
+  stepsize = NULL, eps = 0, cv.metric = c("mse", "abs", "pois"),
+  debug = FALSE)
 }
 \arguments{
 \item{y}{Data matrix of size p x K. May contain NA values but may not contain rows which are all NA.}
@@ -17,8 +17,6 @@ jade_gd(y, gamma, pos = NULL, scale.pos = NULL, lambda1 = NULL,
 \item{gamma}{Fusion penalty.}
 
 \item{pos}{Position vector of length p. If missing will use 1:p.}
-
-\item{scale.pos}{An integer indicating to internally scale positions to range between 0 and \code{scale.pos}.}
 
 \item{lambda1}{Smoothing penalty vecor of length K.
 If not provided, lambda will be chosen by cross validation.}

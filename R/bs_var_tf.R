@@ -6,7 +6,6 @@
 #'@param sds A matrix of estimated standard deviations of \code{Y}. If missing
 #'observations are assumed to have equal variance.
 #'@param pos Vector of positions corresponding to the rows of \code{Y}
-#'@param scale.pos
 #'@param ord Order of trendfiltering. Can be 0, 1 or 2.
 #'@param n.rep Number of bootstrap samples to take.
 #'@return A list with three elements
@@ -17,10 +16,9 @@
 #' }
 #'@export
 bs_var_tf <- function(Y, lambda,
-										sds=NULL,
-										READS=NULL, sd.type=c("Equal", "Binomial", "Poisson"), calc.sds=TRUE,
-										pos=NULL, scale.pos=NULL, ord=2,
-										n.rep=100){
+										sds=NULL, READS=NULL,
+										sd.type=c("Equal", "Binomial", "Poisson"), calc.sds=TRUE,
+										pos=NULL, ord=2, n.rep=100){
 
   sd.type <- match.arg(sd.type)
   if(sd.type == "Binomial" & is.null(READS)){
@@ -30,16 +28,11 @@ bs_var_tf <- function(Y, lambda,
 	p <- dim(Y)[1] #Number of sites
 	k <- dim(Y)[2] #Number of samples
 
-	#Scale positions
+	#Positions
   if(!is.null(pos)){
     stopifnot(length(pos)==p)
   }else{
     pos <- 1:p
-  }
-	pos.given=pos
-  if(!is.null(scale.pos)){
-    R <-range(pos)
-    pos <- scale.pos* ((pos-R[1])/(R[2]-R[1]))
   }
 
 	if(is.null(sds)) sds <- rep(1, p)

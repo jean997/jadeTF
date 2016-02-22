@@ -5,7 +5,7 @@
 \title{Use cross validation paths to choose a value of gamma}
 \usage{
 cv_err_wts(orig.path, cv.path.list = NULL, use.converged.only = TRUE,
-  control.l1 = TRUE)
+  control.l1 = TRUE, metric = c("mse", "pois"))
 }
 \arguments{
 \item{orig.path}{Either a path object or a file containing a \code{jade_path} object.}

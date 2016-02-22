@@ -17,10 +17,10 @@ sep_to_partition <- function(sep, K, data=NULL){
 		partition <- paste("(", partition, ")", sep="")
 		return(partition)
 	}
-	pairs <- matrix(nrow=0, ncol=2)
-	for(i in 1:length(sep)){
-		if(sep[i]==0) pairs <- rbind(pairs, idx_to_pair(i, K))
-	}
+
+  pairs <- unlist(lapply(which(sep==0), FUN=function(x){jadeTF:::idx_to_pair(x, K)}))
+	pairs <- matrix(pairs, ncol=2, byrow = TRUE)
+
 
 	groups <- list(c(1))
 	for(i in 1:nrow(pairs)){
@@ -32,18 +32,16 @@ sep_to_partition <- function(sep, K, data=NULL){
 				found <- TRUE
 				break
 			}
-			j <- length(groups)
-			if(!found) groups[[j+1]] <- p
 		}
+		j <- length(groups)
+		if(!found) groups[[j+1]] <- p
 	}
   for(i in 1:K){
-    if(! i %in% pairs){
-      found <- FALSE
-      for(j in 1:length(groups)){
-        if(i %in% groups[[j]]) found <- TRUE
-      }
-      if(!found) groups[[j+1]] <- c(i)
+    found <- FALSE
+    for(j in 1:length(groups)){
+      if(i %in% groups[[j]]) found <- TRUE
     }
+    if(!found) groups[[j+1]] <- c(i)
   }
 
   #Sort groups
@@ -70,7 +68,7 @@ sep_to_partition <- function(sep, K, data=NULL){
 	if(!all(sep == exp.sep)){
 		cat("WARNING: Inconsistent sep vector\n")
 		cat("Expected: ", exp.sep, "\nGiven", sep, "\n")
-		return("Unk")
+		partition <- paste0("**", partition)
 	}
 	return(partition)
 }

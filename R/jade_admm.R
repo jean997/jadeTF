@@ -11,7 +11,6 @@
 #' @param y Data matrix of size p x K. May contain NA values but may not contain rows which are all NA.
 #' @param gamma Fusion penalty.
 #' @param pos Position vector of length p. If missing will use 1:p.
-#' @param scale.pos An integer indicating to internally scale positions to range between 0 and \code{scale.pos}.
 #' @param lambda Smoothing penalty vecor of length K.
 #' If not provided, lambda will be chosen by cross validation.
 #' @param sample.size Vector of sample sizes of length K.
@@ -61,7 +60,7 @@
 #' }
 #' As well as all of the original parameters.
 #' @export
-jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.size=NULL, ord=2,
+jade_admm <- function(y, gamma, pos=NULL, lambda=NULL, sample.size=NULL, ord=2,
                       sds=NULL, fit.var=NULL, var.wts=NULL, subset.wts=NULL,
                       theta0=NULL, u.alpha0 = NULL, u.beta0=NULL,
                       verbose=FALSE, tol=0.001, max.it=1000, cv.metric=c("mse", "abs", "pois"),
@@ -117,14 +116,8 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
   #Scale positions
   if(!is.null(pos)){
     stopifnot(length(pos)==p)
-    pos.given <- pos
   }else{
     pos <- 1:p
-    pos.given <- pos
-  }
-  if(!is.null(scale.pos)){
-    R <-range(pos)
-    pos<- scale.pos* ((pos-R[1])/(R[2]-R[1]))
   }
 
   ###Choose initial fits, cv lambda if necessary
@@ -147,7 +140,7 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
   if(K==1 | gamma ==0){
     RETURN <- list("fits"=theta.min, "fit.max"=theta.max,
                    "y"=y, "sample.size"=sample.size, "fit.var"=fit.var,
-                   "sds"=sds, "pos"=pos.given, "scale.pos"=scale.pos,
+                   "sds"=sds, "pos"=pos,
                    "lambda"=lambda, "gamma"=gamma, "ord"=ord,
                    "tol"=tol, "subset.wts"=subset.wts, algorithm="admm")
 
@@ -292,7 +285,7 @@ jade_admm <- function(y, gamma, pos=NULL, scale.pos=NULL, lambda=NULL, sample.si
                  "alpha"=alpha, "beta"=beta, "u.beta"=u.beta, "u.alpha"=u.alpha,
                  "rho.alpha"=rho.alpha, "rho.beta"=rho.beta,
                  "y"=y, "sample.size"=sample.size,
-                 "sds"=sds, "fit.var"=fit.var, "pos"=pos.given, "scale.pos"=scale.pos,
+                 "sds"=sds, "fit.var"=fit.var, "pos"=pos,
                  "lambda"=lambda, "gamma"=gamma, "ord"=ord, "tol"=tol,
                  "subset.wts"=subset.wts, "converged"=converged, algorithm="admm")
   return(RETURN)

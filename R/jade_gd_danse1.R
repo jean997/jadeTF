@@ -5,7 +5,6 @@
 #' @param y Data matrix of size p x K. May contain NA values but may not contain rows which are all NA.
 #' @param gamma Fusion penalty.
 #' @param pos Position vector of length p. If missing will use 1:p.
-#' @param scale.pos An integer indicating to internally scale positions to range between 0 and \code{scale.pos}.
 #' @param lambda1 Smoothing penalty vecor of length K.
 #' If not provided, lambda will be chosen by cross validation.
 #' @param lambda2 Parameter for L_1 penalty on fitted values. Defaults to 0.
@@ -45,12 +44,12 @@
 #' }
 #' As well as all of the original parameters.
 #' @export
-jade_gd <- function(y, gamma, pos = NULL, scale.pos=NULL,
-                           lambda1=NULL, lambda2=NULL, sample.size=NULL, ord=0,
-													sds=NULL, fit.var=NULL, var.wts=NULL, subset.wts=NULL,
-                          theta0=NULL, duals0=NULL, verbose=FALSE, sep.tol=1e-3,
-													max.it=1000, thresh=1e-8, stepsize=NULL,
-													eps=0, cv.metric=c("mse", "abs", "pois"), debug=FALSE){
+jade_gd <- function(y, gamma, pos = NULL,
+                  lambda1=NULL, lambda2=NULL, sample.size=NULL, ord=0,
+									sds=NULL, fit.var=NULL, var.wts=NULL, subset.wts=NULL,
+                  theta0=NULL, duals0=NULL, verbose=FALSE, sep.tol=1e-3,
+									max.it=1000, thresh=1e-8, stepsize=NULL,
+									eps=0, cv.metric=c("mse", "abs", "pois"), debug=FALSE){
 
   metric <- match.arg(cv.metric)
 
@@ -103,17 +102,11 @@ jade_gd <- function(y, gamma, pos = NULL, scale.pos=NULL,
 		subset.wts=default_wts(p, K)
 	}
 
-	#Scale positions
+	#Positions
 	if(!is.null(pos)){
 		stopifnot(length(pos)==p)
-		pos.given <- pos
 	}else{
 		pos <- 1:p
-		pos.given <- pos
-	}
-	if(!is.null(scale.pos)){
-		R <-range(pos)
-		pos<- scale.pos* ((pos-R[1])/(R[2]-R[1]))
 	}
 
   ERRS <- 0 #Count errors
@@ -143,9 +136,9 @@ jade_gd <- function(y, gamma, pos = NULL, scale.pos=NULL,
 	if(K==1 | gamma ==0){
 		RETURN <- list("fits"=theta.min, "fit.max"=theta.max,
 			               "y"=y, "sample.size"=sample.size, "fit.var"=fit.var,
-			               "sds"=sds, "pos"=pos.given, "scale.pos"=scale.pos,
-			               "lambda1"=lambda1, "lambda2"=lambda2, "gamma"=gamma, "ord"=ord,
-			               "thresh"=thresh, "tol"=sep.tol, "subset.wts"=subset.wts, algorithm="gd")
+			               "sds"=sds, "pos"=pos, "lambda1"=lambda1, "lambda2"=lambda2,
+		                "gamma"=gamma, "ord"=ord, "thresh"=thresh, "tol"=sep.tol,
+		                "subset.wts"=subset.wts, algorithm="gd")
 
 		return(RETURN)
 	}
@@ -241,7 +234,7 @@ jade_gd <- function(y, gamma, pos = NULL, scale.pos=NULL,
 	RETURN <- list("fits"=theta, "n"=iter.ct, "duals"=duals, "errors"=ERRS,"UB"=UB, "LB"=LB,
 	               "y"=y, "sample.size"=sample.size, "sds"=sds,
 	               "subset.wts"=subset.wts, "fit.var"=fit.var, "var.wts"=var.wts,
-	               "pos"=pos.given, "scale.pos"=scale.pos, "lambda1"=lambda1, "lambda2"=lambda2,
+	               "pos"=pos, "lambda1"=lambda1, "lambda2"=lambda2,
 	               "gamma"=gamma, "ord"=ord, "converged"=converged, "thresh"=thresh, "tol"=sep.tol,
 							  "eps"=eps)
 	sep <- sep_gd(RETURN, sep.tol)

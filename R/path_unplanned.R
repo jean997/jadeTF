@@ -131,7 +131,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		g <- 10^log.gammas[i]
 		#cat("Gamma", g, "\n")
 
-		fit <- jade_admm(y=fit0$y, gamma=g, pos=fit0$pos, scale.pos=fit0$scale.pos,
+		fit <- jade_admm(y=fit0$y, gamma=g, pos=fit0$pos,
 		                   lambda=fit0$lambda, sample.size=fit0$sample.size, ord=fit0$ord,
 		                   sds=fit0$sds, fit.var=fit0$fit.var,
 		                   theta0=theta0, u.alpha0=u.alpha0, u.beta0=u.beta0, rho.beta=rho.beta,

@@ -62,11 +62,11 @@ cv_fit0 <- function(orig.fit, n.folds=5, which.fold=1:n.folds, data.file=NULL,
     if(!is.null(lambda)) lambda.i <- lambda[[out.ct]]
         else lambda.i <- NULL
     if(orig.fit$algorithm=="admm"){
-      fit <- jade_admm(y=new.y, gamma=0, pos=orig.fit$pos, scale.pos=orig.fit$scale.pos,
+      fit <- jade_admm(y=new.y, gamma=0, pos=orig.fit$pos,
                        lambda=lambda.i, sample.size=orig.fit$sample.size, ord=orig.fit$ord,
                        sds=orig.fit$sds, tol=orig.fit$tol)
     }else if(orig.fit$algorithm=="gd"){
-      fit <- jade_gd(y=new.y, gamma=0, pos=orig.fit$pos, scale.pos=orig.fit$scale.pos,
+      fit <- jade_gd(y=new.y, gamma=0, pos=orig.fit$pos,
                        lambda1=lambda.i, lambda2=orig.fit$lambda2,
                        sample.size=orig.fit$sample.size, ord=orig.fit$ord,
                        sds=orig.fit$sds, sep.tol=orig.fit$tol)
@@ -79,9 +79,16 @@ cv_fit0 <- function(orig.fit, n.folds=5, which.fold=1:n.folds, data.file=NULL,
 		  for(j in 1:K){
 			  stp <- stp + orig.fit$sample.size[j]
 			  if(is.null(R$READS)){
-				  my.var <- bs_var_tf(R$Y[, strt:stp], lambda=fit0$lambda[j], sample.size=orig.fit$sample.size[j], positions=orig.fit$pos, scale.pos=orig.fit$scale.pos, ord=orig.fit$ord, n.rep=n.rep.bs.var, sds=orig.fit$sds[,j])
+				  my.var <- bs_var_tf(R$Y[, strt:stp], lambda=fit0$lambda[j],
+				                  sample.size=orig.fit$sample.size[j],
+				                  positions=orig.fit$pos, ord=orig.fit$ord,
+				                  n.rep=n.rep.bs.var, sds=orig.fit$sds[,j])
 			  }else{
-				  my.var <- bs_var_tf(R$Y[, strt:stp], lambda=fit0$lambda[j], sample.size=orig.fit$sample.size[j], positions=orig.fit$pos, scale.pos=orig.fit$scale.pos, ord=orig.fit$ord, n.rep=n.rep.bs.var, READS=R$READS[, strt:stp], sds=orig.fit$sds[,j])
+				  my.var <- bs_var_tf(R$Y[, strt:stp], lambda=fit0$lambda[j],
+				                  sample.size=orig.fit$sample.size[j],
+				                  positions=orig.fit$pos, ord=orig.fit$ord,
+				                  n.rep=n.rep.bs.var, sds=orig.fit$sds[,j],
+				                  READS=R$READS[, strt:stp])
 			  }
 			  fit.var[,j] <- my.var$var
 			  strt <- strt + orig.fit$sample.size[j]

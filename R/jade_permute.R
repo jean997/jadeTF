@@ -110,7 +110,7 @@ jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
           else Ri <- NULL
         fit.var[,i] <- bs_var_tf(Y=Yi, lambda=fit0$lambda[i], sample.size=sample.size[i],
                             sd.type=sd.type, READS=Ri,
-                            pos=fit0$pos, scale.pos=fit0$scale.pos, ord=fit0$ord,
+                            pos=fit0$pos, ord=fit0$ord,
                             n.rep=n.rep.fit.var)
       }
     }else{
@@ -118,7 +118,7 @@ jade_permute <- function(Y, fit0, gammas, save.prefix, sample.size=NULL,
     }
 
     #Fit 0
-    fit0.perm <- jade_admm(y=y.perm, gamma=0, pos=fit0$pos, scale.pos=fit0$scale.pos,
+    fit0.perm <- jade_admm(y=y.perm, gamma=0, pos=fit0$pos,
                      lambda=fit0$lambda, sample.size=fit0$sample.size, ord=fit0$ord,
                      sds=sds.perm, fit.var=fit.var)
 
@@ -189,4 +189,23 @@ eqfd.func <- function(Y){
   sds <- apply(Y, MARGIN=1, FUN=sd)/ncol(Y)
   sds[sds==0] <- min(sds[sds > 0])
   return(list("y"=y, "sds"=sds))
+}
+
+huber.func <- function(Y, k, min.var){
+  yv <- apply(Y, MARGIN=1, FUN=function(x){
+    mu <-  hubers(x, k=k, s=1)
+    v <- max(huber_var(x, k=k, muH=mu), min.var)
+    return(c(mu, v))
+  })
+  return(list("y"=yv[1,], "sds"=sqrt(yv[2,])))
+}
+
+huber_var <- function(x, muH, k){
+  n <- length(x)
+  ifs <- x-muH
+  ifs[(x-muH) < -k] <- -k
+  ifs[(x-muH) > k] <- k
+  C <- sum(abs(x-muH)<=k)/n
+  ifs <- ifs/C
+  return(sum(ifs^2)/n^2)
 }

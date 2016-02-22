@@ -4,13 +4,13 @@
 \alias{jade_admm}
 \title{Fit JADE}
 \usage{
-jade_admm(y, gamma, pos = NULL, scale.pos = NULL, lambda = NULL,
-  sample.size = NULL, ord = 2, sds = NULL, fit.var = NULL,
-  var.wts = NULL, subset.wts = NULL, theta0 = NULL, u.alpha0 = NULL,
-  u.beta0 = NULL, verbose = FALSE, tol = 0.001, max.it = 1000,
-  cv.metric = c("mse", "abs", "pois"), rho.alpha = NULL, rho.beta = 1,
-  adjust.rho.alpha = TRUE, fix.rho.after = 500, tau.decr = 2,
-  tau.incr = 2, mu = 10, e.rel = 1e-04, e.abs = 1e-08)
+jade_admm(y, gamma, pos = NULL, lambda = NULL, sample.size = NULL,
+  ord = 2, sds = NULL, fit.var = NULL, var.wts = NULL,
+  subset.wts = NULL, theta0 = NULL, u.alpha0 = NULL, u.beta0 = NULL,
+  verbose = FALSE, tol = 0.001, max.it = 1000, cv.metric = c("mse",
+  "abs", "pois"), rho.alpha = NULL, rho.beta = 1, adjust.rho.alpha = TRUE,
+  fix.rho.after = 500, tau.decr = 2, tau.incr = 2, mu = 10,
+  e.rel = 1e-04, e.abs = 1e-08)
 }
 \arguments{
 \item{y}{Data matrix of size p x K. May contain NA values but may not contain rows which are all NA.}
@@ -18,8 +18,6 @@ jade_admm(y, gamma, pos = NULL, scale.pos = NULL, lambda = NULL,
 \item{gamma}{Fusion penalty.}
 
 \item{pos}{Position vector of length p. If missing will use 1:p.}
-
-\item{scale.pos}{An integer indicating to internally scale positions to range between 0 and \code{scale.pos}.}
 
 \item{lambda}{Smoothing penalty vecor of length K.
 If not provided, lambda will be chosen by cross validation.}
