@@ -91,7 +91,7 @@ cv_err_wts <- function(orig.path, cv.path.list=NULL,
 		test.idx <- cv.na[!cv.na %in% orig.na]
 		n.test <- c(n.test, length(test.idx))
 
-		if(metric=="mese"){
+		if(metric=="mse"){
 		    cv.err <- unlist( lapply(path$JADE_fits, FUN=function(x, orig.y, orig.sds, test.idx){
 					    sum(( (x$fits[test.idx]-orig.y[test.idx])/orig.sds[test.idx] )^2)
 					    }, orig.y=orig.y, orig.sds=orig.sds, test.idx=test.idx))
