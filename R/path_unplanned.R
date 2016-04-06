@@ -55,6 +55,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 			log.gammas <- log10(path.temp$gammas)
 			sep <- path.temp$sep
 			l1.total <- path.temp$l1.total
+			l1.total0 <- l1.total[1]
 			tol <- path.temp$tol
 			fits <- path.temp$JADE_fits
 			sep.total <- path.temp$sep.total
@@ -72,14 +73,22 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 			  new.gamma <- new.gamma$new.gamma
       }
       dist <- abs(log.gammas -new.gamma)
-      dist[!is.finite(log.gammas) | converged==0] <- Inf
-			closest.idx <- which.min(dist)
-			#cat("Theta init idx ", closest.idx, "\n")
-			theta0 <- fits[[closest.idx]]$fits
-			u.alpha0=fits[[closest.idx]]$u.alpha
-			rho.alpha=fits[[closest.idx]]$rho.alpha
-			u.beta0=fits[[closest.idx]]$u.beta
-			rho.beta=fits[[closest.idx]]$rho.beta
+      dist[!is.finite(log.gammas) | converged==0 | l1.total > l1.total0 ] <- Inf
+      if(sum(is.finite(dist))==0){
+        closest.idx = 1
+        theta0 <- fits[[closest.idx]]$fits
+        u.alpha0=NULL
+        rho.alpha=NULL
+        u.beta0=NULL
+        rho.beta=1
+      }else{
+        closest.idx <- which.min(dist)
+        theta0 <- fits[[closest.idx]]$fits
+        u.alpha0=fits[[closest.idx]]$u.alpha
+        rho.alpha=fits[[closest.idx]]$rho.alpha
+        u.beta0=fits[[closest.idx]]$u.beta
+        rho.beta=fits[[closest.idx]]$rho.beta
+      }
 			log.gammas <- c(log.gammas, min(new.gamma, log.gamma.max))
 	}else{
     if(class(fit0)=="character"){
@@ -196,16 +205,22 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		#Find the fit with the closest gamma to the next value.
 		#Use solutions from this fit as new theta0 value.
 		dist <- abs(log.gammas -new.gamma)
-		dist[!is.finite(log.gammas) | converged==0] <- Inf
-		closest.idx <- which.min(dist)
-		#cat("Theta init idx ", closest.idx, "\n")
-		theta0 <- fits[[closest.idx]]$fits
-
-		u.alpha0=fits[[closest.idx]]$u.alpha
-		rho.alpha=fits[[closest.idx]]$rho.alpha
-		u.beta0=fits[[closest.idx]]$u.beta
-		rho.beta=fits[[closest.idx]]$rho.beta
-
+		dist[!is.finite(log.gammas) | converged==0 | l1.total > l1.total0 ] <- Inf
+		if(sum(is.finite(dist))==0){
+		  closest.idx = 1
+		  theta0 <- fits[[closest.idx]]$fits
+		  u.alpha0=NULL
+		  rho.alpha=NULL
+		  u.beta0=NULL
+		  rho.beta=1
+		}else{
+		  closest.idx <- which.min(dist)
+		  theta0 <- fits[[closest.idx]]$fits
+		  u.alpha0=fits[[closest.idx]]$u.alpha
+		  rho.alpha=fits[[closest.idx]]$rho.alpha
+		  u.beta0=fits[[closest.idx]]$u.beta
+		  rho.beta=fits[[closest.idx]]$rho.beta
+		}
 		log.gammas <- c(log.gammas, min(new.gamma, log.gamma.max))
 		i <- i+1
 		#cat("Next: ", log.gammas[i], " ")
