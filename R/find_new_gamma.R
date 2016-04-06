@@ -9,6 +9,9 @@ find_new_gamma <- function(l1.total, log.gammas, sep.total, n.fits,
   keep.fits <- which(l1.total <= l1.total0 & is.finite(log.gammas) & converged)
   #Too early to use smoothing
   if(length(keep.fits) < 6){
+    #Make start.step larger if many steps and no convergence
+    f <- floor((sum(l1.total > l1.total0 | !converged))/3)
+    start.step <- start.step*(2^f)
     new.gamma <- max(log.gammas) + start.step
     return(list("new.gamma"=new.gamma, "l1.gap"=min(l1.total)/n.fits, "done"=FALSE))
   }
