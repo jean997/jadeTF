@@ -124,12 +124,14 @@ jade_admm <- function(y, gamma, pos=NULL, lambda=NULL, sample.size=NULL, ord=2,
 
   if(verbose) cat("Fitting at max value of gamma.\n")
   if(verbose & is.null(lambda)) cat("Lambda will by chosen by cross validation.\n")
-  theta.max <- fit_gammamax(y=y,  lambda=lambda, pos=pos, sample.size=sample.size, sds=sds, ord=ord, metric=cv.metric)
+  theta.max <- fit_gammamax(y=y,  lambda=lambda, pos=pos, sample.size=sample.size,
+                            sds=sds, ord=ord, metric=cv.metric)
   if(is.null(lambda)) lambda <- theta.max$lambda
   theta.max <- theta.max$fit
 
   if(verbose) cat("Fitting at gamma=0\n")
-  theta.min <- fit_gamma0(y=y,  lambda=lambda, pos=pos, sample.size=sample.size, sds=sds, ord=ord)
+  theta.min <- fit_gamma0(y=y,  lambda=lambda, pos=pos, sample.size=sample.size,
+                          sds=sds, ord=ord)
   theta.min <- theta.min$fit
   if(!is.null(theta0)){
     theta <- theta0
