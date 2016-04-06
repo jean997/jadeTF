@@ -15,14 +15,33 @@ fit_one <- function(y, lambda, pos, sds, sample.size, ord,
   #If all the weights are equal solve
   #Minimize 1/2 || y - \theta ||^2 + (\lambda_1/(N*w^2)||D\theta||_1
 
-  if(equal.wts){
-    tfit.out <- genlasso::trendfilter(y=y[nm], pos=pos[nm], ord=ord)
-  }else{
-    tfit.out <- trendfilter_weights(y=y[nm], pos=pos[nm], wts=wts, ord=ord)
-  }
 
+  maxsteps=2000
+  done=FALSE
+  t=1
+  while(!done){
+    if(equal.wts){
+      tfit.out <- genlasso::trendfilter(y=y[nm], pos=pos[nm],
+                                        ord=ord, maxsteps=maxsteps)
+    }else{
+      tfit.out <- trendfilter_weights(y=y[nm], pos=pos[nm], wts=wts,
+                                      ord=ord, maxsteps=maxsteps)
+    }
+    if(!is.na(lambda) & min(tfit.out$lambda) < lambda){
+      done <- TRUE
+      break
+    }
+    if(is.na(lambda) & tfit.out$completepath){
+      done <- TRUE
+      break
+    }
+    else t <- t+1
+    cat("Re-running with larger maxsteps\n")
+    maxsteps <- t*2000
+    if(t==5) break
+  }
   if(is.na(lambda)){
-    cv <- cv_pred.genlasso(obj=tfit.out, n.folds = 5, mode = "predict",
+    cv <- cv_pred.genlasso(obj=tfit.out, n.folds = 5, mode = "predict", maxsteps=maxsteps,
                            lambda2=lambda2/sample.size, metric=metric)
     l <- cv$lambda.1se #l = lambda_1/(N*w^2) or lambda_1/N
     lambda <- l*sample.size

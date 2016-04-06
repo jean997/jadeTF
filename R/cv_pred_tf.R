@@ -4,7 +4,7 @@
 
 cv_pred.genlasso <- function(obj, n.folds=5, mode=c("predict", "approx"),
                              lambda2=0, metric=c("mse", "abs", "pois"),
-                             zero.tol=1e-11){
+                             zero.tol=1e-11, maxsteps=2000){
 	mode <- match.arg(mode)
 	metric <- match.arg(metric)
 	stopifnot("genlasso" %in% class(obj))
@@ -30,9 +30,9 @@ cv_pred.genlasso <- function(obj, n.folds=5, mode=c("predict", "approx"),
     wte <- wts[ote]
 
 		if(all(wts==1)){
-			out.train <-  genlasso:::trendfilter(y=ytr, pos=xtr, ord=obj$ord)
+			out.train <-  genlasso:::trendfilter(y=ytr, pos=xtr, ord=obj$ord, maxsteps=maxsteps)
 		}else{
-			out.train <-  trendfilter_weights(y=ytr, pos=xtr, ord=obj$ord, wts=wtr)
+			out.train <-  trendfilter_weights(y=ytr, pos=xtr, ord=obj$ord, wts=wtr, maxsteps=maxsteps)
 		}
 
     #matrix co.train is length(otr) x nL
