@@ -135,6 +135,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 
 	small.step.ct <- 0
 	buffer.orig <- buffer
+	bg.gammas <- c()
 	done <- FALSE
 	while(!done){
 		g <- 10^log.gammas[i]
@@ -165,9 +166,10 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		converged[i] <- fit$converged
     #If not converged - go back until you are close enough to converge (experimental)
 		if(!converged[i] & abs(log.gammas[closest.idx]-log.gammas[i]) >= 2*buffer & i > 6 & is.finite(log.gammas[closest.idx])){
+		  bg.gammas <- c(bg.gammas, log.gammas[i])
 		  new.gamma <- min(log.gammas[closest.idx], log.gammas[i]) + abs(log.gammas[closest.idx]-log.gammas[i])/2
 		  cat("Backtracking: ", new.gamma, "\n")
-		  while(min(abs(new.gamma-log.gammas[-1])) < buffer/2) new.gamma <- new.gamma + buffer
+		  while(min(abs(new.gamma-c(log.gammas[-1], bg.gammas))) < buffer/2) new.gamma <- new.gamma + buffer
 		  log.gammas[i] <- new.gamma
 		  l1.total[i] <- NA; sep.total[i] <- NA; converged[i] <- NA
 		  for(j in 1:(K-1)){
@@ -179,6 +181,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		}else if(!converged[i]){
 		  converged[i] <- 2
 		}
+		bg.gammas <- c()
 		#Otherwise find the next gamma value
 		new.gamma <- find_new_gamma(l1.total, log.gammas, sep.total, n.fits,
 		                            converged, start.step, tol, buffer, verbose=TRUE)
