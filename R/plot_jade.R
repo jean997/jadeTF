@@ -1,6 +1,7 @@
 
 plot_data <- function(counts, reads, pos, ylim=c(0, 1), cols=NULL,
-                      range=NULL, xlab="Position", ylab="Methylation Proportion"){
+                      range=NULL, sep.tab=NULL, bg.color="blue",
+                      xlab="Position", ylab="Methylation Proportion"){
   if(!is.matrix(counts)){
 				K=1
 				p <- length(counts)
@@ -32,6 +33,10 @@ plot_data <- function(counts, reads, pos, ylim=c(0, 1), cols=NULL,
 	df <- data.frame(pos, data.full, reads)
   names(df) <- c("pos", paste("y", 1:K, sep=""), paste("r", 1:K, sep=""))
 	h <- ggplot(df) + theme_bw()
+	#Background colors
+	if(!is.null(sep.tab)){
+	  h <- h + gg_sep_rect(sep.tab, color = bg.color, alpha=0.2)
+	}
   for(j in 1:K){
 			h <- h + geom_point(aes_string(x="pos", y=paste("y", j, sep=""),
 			                               size=paste("r", j, sep="")), col=cols[j], alpha=1)
