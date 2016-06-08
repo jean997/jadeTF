@@ -213,33 +213,6 @@ get_regions_total <- function(path, tol){
   return(reg.total)
 }
 
-#' Determine which pairs of sites are separated from a jade_gd object.
-#' @param obj A jade_gd object
-#' for a \code{jade_admm} object use \code{fits=obj$beta}.
-#' @param tol Tolerance for determining separation
-#' @return A list of lists of length p vectors containing 0s and 1s.
-#' The vector stored in \code{[[i]][[j-i]]} indicates the separation between group i and group j.
-#' @export
-sep_gd <- function(obj, tol=1e-6){
-
-  p <- length(obj$duals[[1]][[1]])
-  K <- length(obj$sample.size)
-  sep <- list()
-  for(j in 1:(K-1)){
-    sep[[j]] <- list()
-    for(i in (j+1):K){
-      u<- obj$duals[[j]][[i-j]]
-      bound <- obj$gamma*obj$var.wts[[j]][[i-j]]
-      w <- obj$subset.wts[[j]][[i-j]]
-      bound[w==0] <- Inf
-      sep[[j]][[i-j]] <- rep(0, p)
-      sep[[j]][[i-j]][(abs(abs(u) -bound)) < tol] <- 1
-    }
-  }
-  return(sep)
-}
-
-
 pair_to_idx <- function(i, j, K){
   if(i==j) stop("i == j given to pair_to_idx")
   my.i <- min(i, j)
