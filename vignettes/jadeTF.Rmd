@@ -8,7 +8,11 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-This vignette walks through an analysis of some simulated data using JADE via the `jadeTF` package. For more details about the method see (reference to paper). In this example we compare the profiles of two groups. Running JADE and cross validating the tuning parameters can be computationally burdensome so the functions in this package are designed to allow opportunities to parallelize tasks. The basic outline of a JADE analysis is
+This vignette walks through an analysis of some simulated data using JADE via the `jadeTF` package. For more details about the method see 
+
+Morrison, J., Witten, D., & Simon, N. (2016). Joint Adaptive Differential Estimation: A tool for comparative analysis of smooth genomic data types., 1–40.
+
+In this example we compare the profiles of two groups. Running JADE and cross validating the tuning parameters can be computationally burdensome so the functions in this package are designed to allow opportunities to parallelize tasks. The basic outline of a JADE analysis is
 
 1. Fit JADE at `gamma=0`. The smoothing parameters f $\lambda$ will be chosen via cross validation if they aren't provided.
 1. (Optional and only available for the two group case) Estimate the variance of the fits using cross validation. These values are used to construct the $W$ matrix.
@@ -64,7 +68,7 @@ Here we've chosen an intermediate value of $\gamma$ which results in some fused 
 ```{r, eval=FALSE}
 fit1 <- jade_admm(y, gamma=10^(-0.12), ord=2, sample.size = c(10, 15), lambda=fit0$lambda)
 ```
-The `jade_admm` function is the workhorse of the `jadeTF` package and executes the ADMM algorithm described in (reference to paper). The parameters `theta0`, `u.alpha0`, `rho.alpha`, `u.beta0`, and `rho.beta` can be used to start the ADMM algorithm off at the solution for a nearby value of `gamma`. If you provide `u.alpha0` or `u.beta0` be sure to provide the corresponding step size. This ''warm start'' techinique can reduce the number of iterations to reach convergence and will be used when we run a sequence of fits using the `jade_path_planned` or `jade_path` functions.
+The `jade_admm` function is the workhorse of the `jadeTF` package and executes the ADMM algorithm described in Morrison et al 2016. The parameters `theta0`, `u.alpha0`, `rho.alpha`, `u.beta0`, and `rho.beta` can be used to start the ADMM algorithm off at the solution for a nearby value of `gamma`. If you provide `u.alpha0` or `u.beta0` be sure to provide the corresponding step size. This ''warm start'' techinique can reduce the number of iterations to reach convergence and will be used when we run a sequence of fits using the `jade_path_planned` or `jade_path` functions.
 
 The function `get_separated_regions` can be used to produce a table listing regions with separation. The function provides two tables - one merged over partition types and one with partition types separated. In the case of $K=2$ these tables are thes same. The tables automatically include a "Chrom" and "Window" collumn which can be useful for large problems that are broken into many windows. The tables can also be written out to text files as .bed files.
 ```{r}
@@ -88,7 +92,9 @@ Running a full path can take a while. Partial paths are saved to temp files that
 ```{r, eval=FALSE}
 path <- jade_path(fit0 = fit0, n.fits = 100, out.file = "example_path.RData")
 ```
-The function `jade_path` doesn't require any knowledge about what the critical values of `gamma` at which the curves are totally fused at the high end or just begin to fuse at the low end. `jade_path` can be slower due to fitting more than the target number of fits - for example the above code takes 11.3 minutes and results in 108 fits rather than 100. There is an alternate function `jade_path_planned` which requres inputting a starting and approximate stopping point but can be faster if the points provided are good guesses. The code below takes 10.6 minutes and fits JADE 101 times but has the advantage of knowing where to start and stop.
+The function `jade_path` doesn't require any knowledge about what the critical values of `gamma` at which the curves are totally fused at the high end or just begin to fuse at the low end. `jade_path` can be slower due to fitting more than the target number of fits - for example the above code takes 11.3 minutes and results in 108 fits rather than 100. 
+
+There is an alternate function `jade_path_planned` which requres inputting a starting and approximate stopping point but can be faster if the points provided are good guesses. The code below takes 10.6 minutes and fits JADE 101 times but has the advantage of knowing where to start and stop.
 ```{r, eval=FALSE}
 path.planned <- jade_path_planned(fit0 = fit0, 
                                   log.gamma.start = -1, log.gamma.stop= 0.1, 
@@ -117,46 +123,11 @@ path.1 <- jade_path(fit0 = fit0.1, n.fits = 100, out.file = "example_path.1.RDat
 The function `cv_err` computes the cross validation error and determines the fit in the original path with the lowest cross validation error and 1 standard error rule cross validation error.
 ```{r, eval=FALSE}
 cv.path.list <- paste("example_path.", 1:5, ".RData", sep="")
-cv <- cv_err_wts(orig.path="example_path.RData", cv.path.list=cv.path.list)
+example_cv <- cv_err_wts(orig.path="example_path.RData", cv.path.list=cv.path.list)
 ```
 
-```{r, eval=FALSE}
-path <- getobj("example_path.RData")
-f <- path$JADE_fits[[cv$cv.1se.l1]]
-res.tab <- get_separated_regions(fit = f, new.tol=1e-3)
-plot_jade(fits = f$fits, pos = 1:100, maxwidth = 0.5, sep.tab = res.tab$merged)
-```
-
-
-## When $K=2$, improve fits by including the estimated variance of the smoothed profiles.
-
-Estimate the variance of a smoothed fit to each group by bootstrapping:
-```{r, eval=FALSE}
-set.seed(20000)
-v1 <- bs_var_tf(Y=y1, lambda=fit0$lambda[1])
-v2 <- bs_var_tf(Y=y2, lambda=fit0$lambda[2])
-fit_var <- cbind(v1$var, v2$var)
-```
-
-Follow the same procedure as before -- fit first at `gamma = 0` and then for a grid of gamma values.
-```{r, eval=FALSE}
-fit0_wts <- jade_admm(y, gamma=0, ord=2, sample.size = c(10, 15), fit.var=fit_var)
-path_wts <- jade_path(fit0 = fit0_wts, n.fits = 100, out.file = "example_path_wts.RData", tol=1e-3)
-```
-
-Cross validation for the weighted analysis:
-```{r, eval=FALSE}
-cv_fit0(orig.fit=fit0_wts, n.folds=5, which.fold=1:5, save.prefix="f0_wts", return.objects=FALSE)
-```
-```{r, eval=FALSE}
-for(i in 1:5){
-  path.cv <- jade_path(fit0 = paste0("f0_wts.", i, ".RData"), n.fits = 100, out.file = paste0("example_path_wts.", i, ".RData"))
-}
-```
-```{r, eval=FALSE}
-cv.path.list <- paste("example_path_wts.", 1:5, ".RData", sep="")
-cv <- cv_err_wts(orig.path="example_path_wts.RData", cv.path.list=cv.path.list)
-path <- getobj("example_path_wts.RData")
+```{r, fig.show="hold", fig.width=6, fig.height=3}
+f <- example_path$JADE_fits[[example_cv$cv.1se.l1]]
 res.tab <- get_separated_regions(fit = f, new.tol=1e-3)
 plot_jade(fits = f$fits, pos = 1:100, maxwidth = 0.5, sep.tab = res.tab$merged)
 ```
