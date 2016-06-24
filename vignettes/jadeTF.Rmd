@@ -1,5 +1,6 @@
 ---
 title: "Joint Adaptive Differential Estimation with trendfiltering"
+author: "Jean Morrison"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
@@ -10,7 +11,7 @@ vignette: >
 
 This vignette walks through an analysis of some simulated data using JADE via the `jadeTF` package. For more details about the method see 
 
-Morrison, J., Witten, D., & Simon, N. (2016). Joint Adaptive Differential Estimation: A tool for comparative analysis of smooth genomic data types., 1–40.
+Morrison, J., Witten, D., & Simon, N. (2016). Joint Adaptive Differential Estimation: A tool for comparative analysis of smooth genomic data types.
 
 In this example we compare the profiles of two groups. Running JADE and cross validating the tuning parameters can be computationally burdensome so the functions in this package are designed to allow opportunities to parallelize tasks. The basic outline of a JADE analysis is
 

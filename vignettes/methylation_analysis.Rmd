@@ -1,0 +1,232 @@
+---
+title: "Analysis of RRBS Methylation Data Using JADE"
+author: "Jean Morrison"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Analysis of RRBS Methylation Data Using JADE}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+In this document we will walk through an alnalysis of some RRBS Methylations data from ENCODE Using JADE. This is the same data analysis discussed in Section 5 of 
+
+Morrison, J., Witten, D., & Simon, N. (2016). Joint Adaptive Differential Estimation: A tool for comparative analysis of smooth genomic data types.
+
+
+## Download the Data
+To do this analysis we will need the jadeTF R package and data. We downloaded .bed files for three cell types in different developmental stages of the skeletal muscle lineage from ENCODE. In this analysis we onlly use chromosome 22. The sorted chromosme 22 data we use are available in a gzipped archive [here](link to github)
+
+These are the original ENCODE sources:
+([Myoblast](https://www.encodeproject.org/experiments/ENCSR000DFD/))
+([Myotube](https://www.encodeproject.org/experiments/ENCSR000DFX/))
+([Skeletal](https://www.encodeproject.org/experiments/ENCSR000DFU/))
+
+The myoblast and myotbue lines each have three technical replicates while the skeletal muscle line has only two. 
+
+To produce the data in the archive, we first sorted and extracted chromosome 22. This could be done using a tool like [bedops](https://bedops.readthedocs.io/en/latest/):
+```
+sort-bed myoblast1.bed  |  bedops --chrom chr22 -u - > myoblast1_22.bed
+```
+This is assuming you've named the bed file for the first myoblast replicate `myoblast1.bed`.
+This step has already been done.
+
+The archive that contains the data also contains all of the R objects we will produce in this vignette so if you are following along and running out of that folder you should copy those objects firs or you will over-write them!
+
+### Pre-Process the Data
+
+The first step is to extract the information we want from the bed files and combine replicates. Each bed file has 11 columns. We really only want columns 2 (position), 10 (reads), and 11 (percent of reads methylated). 
+The `combine_replicates` utility function can be used to combine replicates (adding reads and counts at the same location).
+
+```{r, eval=FALSE}
+library(readr)
+library(jadeTF)
+
+#Skeletal Muscle
+dat1 <- read_delim("skm1_22.bed", delim="\t", col_names=FALSE)
+df1 <- data.frame(cbind(dat1[,2], dat1[,10], round(dat1[,10]*dat1[,11]/100)))
+
+dat2 <- read_delim("skm2_22.bed", delim="\t", col_names=FALSE)
+df2 <- data.frame(cbind(dat2[,2], dat2[,10], round(dat2[,10]*dat2[,11]/100)))
+names(df1) <-names(df2) <-  c("pos", "reads", "counts")
+
+sk_comb <- combine_replicates(dfs=list(df1, df2))
+#Clean up
+rm(dat1, dat2, df1, df2)
+
+#Myotubes
+
+dat1 <- read_delim("myotube1_22.bed", delim="\t", col_names=FALSE)
+df1 <- data.frame(cbind(dat1[,2], dat1[,10], round(dat1[,10]*dat1[,11]/100)))
+
+dat2 <- read_delim("myotube2_22.bed", delim="\t", col_names=FALSE)
+df2 <- data.frame(cbind(dat2[,2], dat2[,10], round(dat2[,10]*dat2[,11]/100)))
+
+dat3 <- read_delim("myotube3_22.bed", delim="\t", col_names=FALSE)
+df3 <- data.frame(cbind(dat3[,2], dat3[,10], round(dat3[,10]*dat3[,11]/100)))
+
+names(df1) <-names(df2) <-  names(df3) <- c("pos", "reads", "counts")
+
+mt_comb <- combine_replicates(dfs=list(df1, df2, df3))
+rm(dat1, dat2, dat3, df1, df2, df3)
+
+#Myoblasts
+dat1 <- read_delim("myoblast1_22.bed", delim="\t", col_names=FALSE)
+df1 <- data.frame(cbind(dat1[,2], dat1[,10], round(dat1[,10]*dat1[,11]/100)))
+
+dat2 <- read_delim("myoblast2_22.bed", delim="\t", col_names=FALSE)
+df2 <- data.frame(cbind(dat2[,2], dat2[,10], round(dat2[,10]*dat2[,11]/100)))
+
+dat3 <- read_delim("myoblast3_22.bed", delim="\t", col_names=FALSE)
+df3 <- data.frame(cbind(dat3[,2], dat3[,10], round(dat3[,10]*dat3[,11]/100)))
+
+names(df1) <-names(df2) <-  names(df3) <- c("pos", "reads", "counts")
+
+mb_comb <- combine_replicates(dfs=list(df1, df2, df3))
+rm(dat1, dat2, dat3, df1, df2, df3)
+```
+
+
+Now we have three data frames `sk_comb`, `mt_comb`, and `mb_comb`. The function `collect_methylation_data` will combine these into something we can use with JADE.
+
+```{r, eval=FALSE}
+sk_mt_mb_data <- collect_methylation_data(dfs=list(sk_comb, mt_comb, mb_comb))
+```
+
+`sk_mt_mb` is a list object with items `counts` (A matrix of methylated counts), `reads` (Matrix of reads), `probs` (counts/reads), and `sds` (An estimate of the standard deviations of the values in `probs`) and `pos`, a vector of positions.
+
+```{r, eval=FALSE}
+names(sk_mt_mb_data)
+#[1] "counts" "reads"  "pos"    "probs"  "sds"  
+ dim(sk_mt_mb_data$counts)
+#[1] 46142     3
+head(sk_mt_mb_data$counts)
+#    [,1] [,2] [,3]
+#[1,]    0   54   32
+#[2,]   NA    9    7
+#[3,]   NA   12    7
+#[4,]    2  299  162
+#[5,]    0  268  142
+#[6,]   11   30   11
+head(sk_mt_mb_data$reads)
+#    [,1] [,2] [,3]
+#[1,]    1   81   50
+#[2,]   NA   14    9
+#[3,]   NA   14    9
+#[4,]    4  327  188
+#[5,]    4  327  188
+#[6,]   16   34   13
+head(sk_mt_mb_data$probs)
+#      [,1]      [,2]      [,3]
+#[1,] 0.0000 0.6666667 0.6400000
+#[2,]     NA 0.6428571 0.7777778
+#[3,]     NA 0.8571429 0.7777778
+#[4,] 0.5000 0.9143731 0.8617021
+#[5,] 0.0000 0.8195719 0.7553191
+#[6,] 0.6875 0.8823529 0.8461538
+head(sk_mt_mb_data$sds)
+#         [,1]       [,2]       [,3]
+#[1,] 0.4330127 0.05245758 0.06799428
+#[2,]        NA 0.12879170 0.14433757
+#[3,]        NA 0.09960238 0.14433757
+#[4,] 0.2500000 0.01557662 0.02532263
+#[5,] 0.1500000 0.02130997 0.03141183
+#[6,] 0.1169557 0.05740486 0.10622316
+```
+
+
+## Divide the data into windows
+
+Our combined data object has ~46k data points. We need to divide this into windows in order to run JADE. We chose to create windows by dividing data points seaparated by more than 2kb. The utility function `methylation_windows` will find the window boundaries based on a vector
+of poisitions and a minimum gap size we want to allow. It will also trim windows so that
+they begin and end with data points non-missing in all groups (if desired). This is done by setting the `nm.edges` option to TRUE and providing a vector counting the number of groups missing at each position:
+
+```{r, eval=FALSE}
+windows <- methylation_windows(positions = sk_mt_mb_data$pos, gapsize = 2000, 
+                               mindata = 20, nm.edges=TRUE, 
+                               nmiss = rowSums(is.na(sk_mt_mb_data$probs)))
+
+ dim(windows)
+#[1] 477   6
+ head(windows)
+#   start stop ncpg start.pos stop.pos size
+#1    50  122   73  17081986 17083543 1557
+#2   215  304   90  17565810 17566989 1179
+#3   306  349   44  17589489 17590235  746
+#4   355  448   94  17600636 17602561 1925
+#6   501  590   90  17652214 17654063 1849
+#7   687  726   40  17849507 17850607 1100
+```
+
+This tells us that the first window goes from index 50 to index 122, contains 73 CpGs and gives the start and stop base-pair positions. 
+
+
+## Run JADE!
+
+To run JADE for each window, we simply extract the relevant data from `sk_mt_mb_data` and follow the same procedure used for the example data in the main vignette. 
+
+1: Fit the data with `gamma=0`. Here we show the analysis for window 46 which is shown in figure 6. We scale some of the variables to make sure that interesting values of gamma will fall in a reasonable range. Here we scale the standard deviation weights by their minimum and scale the positions to range between 0 and the total number of observations (59 in this case). As long as the spacing stays the same, any scaling will give the same answer.
+
+```{r, eval=FALSE}
+ #Extarct data for just this window
+ i <- 46
+ y <- sk_mt_mb_data$probs[windows$start[i]:windows$stop[i], ]
+ counts <- sk_mt_mb_data$counts[windows$start[i]:windows$stop[i], ]
+ reads <- sk_mt_mb_data$reads[windows$start[i]:windows$stop[i], ]
+ pos <- sk_mt_mb_data$pos[windows$start[i]:windows$stop[i]]
+ p <- length(pos)
+ pos <- p*(pos -min(pos))/(max(pos)-min(pos))
+ 
+ sds <- sk_mt_mb_data$sds[windows$start[i]:windows$stop[i], ]
+ sds <- sds/min(sds, na.rm=TRUE)
+ #Run at gamma=0
+ fit0 <- jade_admm(y=y, gamma=0, sample.size=rep(1, 3), ord=2, pos=pos, sds=sds)
+#1 ..2 ..3 ..4 ..5 ..
+#2.099716
+ save(fit0, file=paste0("fit0_", i, ".0.RData"))
+ 
+ #Plot!
+f0_dataplot <- jadeTF:::plot_data(counts=counts, reads=reads, pos=pos, cols=c("black", "violetRed", "seagreen"))
+f0_fitplot <- plot_jade(fits=fit0$fits, wsize=100, pos=pos, reads=reads, ylim=c(0, 1)) 
+```
+
+`f0_dataplot` will show you figure 6a. `f0_fitplot` shows you the fitted values when `gamma=0`.
+
+2: Run the cross-validation data at `gamma=0`. Providing the `cv_fit0` function with the 
+`save.prefix` parameter will tell it to save these fits.
+
+```{r, eval=FALSE}
+cv_fit0(orig.fit=fit0, which.fold=1:5, n.folds=5,
+        save.prefix=paste0("fit0_", i), return.objects=FALSE)
+#1 ..1 ..2 ..3 ..4 ..5 ..
+#1.858192 
+#2 ..1 ..2 ..3 ..4 ..5 ..
+#1.299696 
+#3 ..1 ..2 ..3 ..4 ..5 ..
+#1.911724 
+#4 ..1 ..2 ..3 ..4 ..5 ..
+#2.235627 
+#5 ..1 ..2 ..3 ..4 ..5 ..
+#1.979756 
+#NULL
+```
+
+3. Run JADE at a path of gamma values: This will take a while. It is really best to run this and step 4 in parallel on a cluster if you have access to it or in the background so you can do something else!
+
+```{r, eval=FALSE}
+ path <- jade_path(fit0 =paste0("fit0_", i, ".0.RData"), out.file=paste0("path_",i, ".0.RData"), 
+                    adjust.rho.alpha=TRUE, log.gamma.min=-10,
+                    tol=5e-3, n.fits = 100, max.it = 50000)
+### Long output of jade_path omitted #####
+```
+
+
+4. Run the path for all 5 cross-validation folds: This takes a while (5 times longer than step 3)!
+
+```{r, eval=FALSE}
+for(fold in 1:5){
+ path <- jade_path(fit0 = paste0("fit0_", i, ".", fold, ".RData"), 
+                   out.file=paste0("path_",i, ".", fold, ".RData"), 
+                    adjust.rho.alpha=TRUE, log.gamma.min=-10,
+                    tol=5e-3, n.fits = 100, max.it = 50000)
+}
+```
