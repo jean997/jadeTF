@@ -227,6 +227,6 @@ for(fold in 1:5){
  path <- jade_path(fit0 = paste0("fit0_", i, ".", fold, ".RData"), 
                    out.file=paste0("path_",i, ".", fold, ".RData"), 
                     adjust.rho.alpha=TRUE, log.gamma.min=-10,
-                    tol=5e-3, n.fits = 100, max.it = 50000)
+                    tol=5e-3, n.fits = 100, max.it = 5000)
 }
 ```
