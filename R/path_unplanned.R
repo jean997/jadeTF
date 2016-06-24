@@ -67,7 +67,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
       }else{
 			  #Find next gamma value
 			  new.gamma <- find_new_gamma(l1.total, log.gammas, sep.total, n.fits,
-			                              converged, start.step, tol, buffer, verbose=TRUE)
+			                              converged, start.step, tol, buffer, verbose=FALSE)
 			  if(new.gamma$done) stop("Restarted but path seems to be done?")
 			  l1.gap <- new.gamma$l1.gap
 			  new.gamma <- new.gamma$new.gamma
@@ -184,7 +184,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		bg.gammas <- c()
 		#Otherwise find the next gamma value
 		new.gamma <- find_new_gamma(l1.total, log.gammas, sep.total, n.fits,
-		                            converged, start.step, tol, buffer, verbose=TRUE)
+		                            converged, start.step, tol, buffer, verbose=FALSE)
 
 		if(new.gamma$done | max(log.gammas) ==log.gamma.max | i >= max.fits){
 		  if(verbose) cat("Finishing\n")
@@ -200,7 +200,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		}else{
 		  small.step.ct <- small.step.ct + 1
 		}
-		cat("small.step.ct: ", small.step.ct, " buffer: ", buffer, "\n")
+		#cat("small.step.ct: ", small.step.ct, " buffer: ", buffer, "\n")
 		if(small.step.ct > 5 & buffer <= 1e3*buffer.orig){
 		  buffer <- 10*buffer
 		  small.step.ct <- 0
@@ -208,7 +208,7 @@ jade_path <- function(n.fits, out.file, fit0 = NULL, temp.file=NULL,
 		#Find the fit with the closest gamma to the next value.
 		#Use solutions from this fit as new theta0 value.
 		dist <- abs(log.gammas -new.gamma)
-		dist[!is.finite(log.gammas) | converged==0 | l1.total > l1.total0 ] <- Inf
+		dist[!is.finite(log.gammas) | converged==0 | l1.total > 1.2*l1.total0 ] <- Inf
 		if(sum(is.finite(dist))==0){
 		  closest.idx = 1
 		  theta0 <- fits[[closest.idx]]$fits
