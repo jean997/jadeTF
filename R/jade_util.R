@@ -271,66 +271,46 @@ plot_separation <- function(path.obj, sites, hline=NULL, main="", log=TRUE, ylim
 
 #Objective
 
-h <- function(x, p, pos, ord){
-  D_tf <- getDtfPosSparse(n=p, ord=ord, pos=pos)
-  return(sum(abs ( D_tf %*% x)))
-}
-
 #JADE Objective function for trend filtering problem
 #These are used by jade_gd
 obj_fct_wrapper <- function(jade.obj){
-  if(jade.obj$algorithm == "admm"){
-    lambda1=jade.obj$lambda
-    lambda2 = rep(0, length(lambda1))
-  }else{
-    lambda1=jade.obj$lambda1
-    lambda2=jade.obj$lambda2
+
+  if(!is.null(jade.obj$scale.pos)){
+    pos <- jade.obj$pos
+    R <-range(pos)
+    pos<- jade.obj$scale.pos* ((pos-R[1])/(R[2]-R[1]))
+    jade.obj$pos <- pos
   }
-  obj.value <- obj_fct(jade.obj$y, jade.obj$fits, lambda1, lambda2, jade.obj$gamma, jade.obj$sample.size,
-          jade.obj$subset.wts, jade.obj$sds, jade.obj$var.wts, jade.obj$pos, jade.obj$ord)
+
+  obj.value <- obj_fct(jade.obj$y, jade.obj$fits, jade.obj$lambda, jade.obj$gamma, jade.obj$sample.size,
+           jade.obj$sds, jade.obj$pos, jade.obj$ord)
   return(obj.value)
 }
-obj_fct <-  function(y, theta, lambda1, lambda2, gamma, sample.size,
-                     subset.wts, sds, var.wts, pos, ord){
+obj_fct <-  function(y, theta, lambda, gamma, sample.size,
+                     sds,  pos, ord){
+
+  h <- function(x, p, pos, ord){
+    D_tf <- getDtfPosSparse(n=p, ord=ord, pos=pos)
+    return(sum(abs ( D_tf %*% x)))
+  }
 
   p <- dim(y)[1]
   K <- dim(y)[2]
 
   obj.value <- 0
+
   for(j in 1:K){
     nm <- which(!is.na(y[,j]))
-    obj.value <- obj.value + (sample.size[j]/2)*sum((y[nm,j]-theta[nm,j])^2) +
-      lambda1[j]*h(theta[,j], p, pos, ord)+lambda2[j]*sum(abs(theta[,j]))
+    obj.value <- obj.value + (sample.size[j]/2)*sum((1/sds[nm,j])*(y[nm,j]-theta[nm,j])^2) +
+      lambda[j]*h(theta[,j], p, pos, ord)
     if(j==K) next
     for (i in (j+1):K){
-      pen <- gamma*sum(abs(theta[,j]-theta[,i])*subset.wts[[j]][[i-j]]*var.wts[[j]][[i-j]])
+      pen <- gamma*sum(abs(theta[,j]-theta[,i]))
       obj.value <- obj.value + pen
     }
   }
   return(obj.value)
 }
-
-#Dual formulation of objective
-dual_fct <- function(y, theta, duals, lambda1, lambda2, sample.size, pos, ord, sds){
-  K <- dim(y)[2]
-  dual_value <- 0
-  p <- dim(y)[1]
-  for(j in 1:K){
-    nm <- which(!is.na(y[,j]))
-    dual_value <- dual_value + (sample.size[j]/2)*sum(((y[nm,j]-theta[nm,j])/sds[nm,j])^2) +
-      lambda1[j]*h(theta[,j], p, pos, ord)+lambda2[j]*sum(abs(theta[,j]))
-    if(j==K) next
-    for (i in (j+1):K){
-      u <- duals[[j]][[i-j]]
-      #plus bigger-smaller
-      pen <- sum(u*(theta[,i]-theta[,j]))
-      dual_value <- dual_value + pen
-    }
-  }
-  return(dual_value)
-}
-
-
 
 expit <- function(x){return(exp(x)/(1 + exp(x)))}
 logit <- function(x){return( log(x/(1-x)))}
