@@ -191,6 +191,8 @@ jade_admm <- function(y, gamma, pos=NULL, lambda=NULL, sample.size=NULL, ord=2,
   converged <- FALSE
   done <- FALSE
 
+
+  objv <- c()
   #Start
   while(!done){
     if(verbose) cat(iter, " ")
@@ -215,6 +217,9 @@ jade_admm <- function(y, gamma, pos=NULL, lambda=NULL, sample.size=NULL, ord=2,
     rel.cri.dual <- sqrt(sum((t(D)%*%u.alpha)^2) + sum(u.beta^2))
     e.dual <- sqrt(K*(alpha.size + p))*e.abs + e.rel*rel.cri.dual
     e.primal <- sqrt(K*(alpha.size + p))*e.abs  + e.rel*rel.cri.pri
+
+    #Calculate Objective Value
+    objv <- c(objv, obj_fct(y, theta, lambda, gamma, sample.size, sds, pos, ord))
 
     if(verbose & iter%%100==1){
       cat(primal.resid.norm, " ", e.primal, "\n")
@@ -288,7 +293,7 @@ jade_admm <- function(y, gamma, pos=NULL, lambda=NULL, sample.size=NULL, ord=2,
                  "rho.alpha"=rho.alpha, "rho.beta"=rho.beta,
                  "y"=y, "sample.size"=sample.size,
                  "sds"=sds, "fit.var"=fit.var, "pos"=pos,
-                 "lambda"=lambda, "gamma"=gamma, "ord"=ord, "tol"=tol,
+                 "lambda"=lambda, "gamma"=gamma, "ord"=ord, "tol"=tol, "objv"=objv,
                  "subset.wts"=subset.wts, "converged"=converged, algorithm="admm")
   return(RETURN)
 }
