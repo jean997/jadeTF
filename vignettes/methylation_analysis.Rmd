@@ -210,7 +210,7 @@ cv_fit0(orig.fit=fit0, which.fold=1:5, n.folds=5,
 #NULL
 ```
 
-3. Run JADE at a path of gamma values: This will take a while. It is really best to run this and step 4 in parallel on a cluster if you have access to it or in the background so you can do something else!
+3. Run JADE at a path of gamma values: Running this path takes about 7 hours but you can find it already computed in the folder with the data!
 
 ```{r, eval=FALSE}
  path <- jade_path(fit0 =paste0("fit0_", i, ".0.RData"), out.file=paste0("path_",i, ".0.RData"), 
@@ -220,7 +220,7 @@ cv_fit0(orig.fit=fit0, which.fold=1:5, n.folds=5,
 ```
 
 
-4. Run the path for all 5 cross-validation folds: This takes a while (5 times longer than step 3)!
+4. Run the path for all 5 cross-validation folds: This takes a while (5 times longer than step 3)! It's best to put these jobs on a cluster if you have access.
 
 ```{r, eval=FALSE}
 for(fold in 1:5){
@@ -229,4 +229,22 @@ for(fold in 1:5){
                     adjust.rho.alpha=TRUE, log.gamma.min=-10,
                     tol=5e-3, n.fits = 100, max.it = 5000)
 }
+```
+
+
+5. Select $\gamma$:
+
+```{r, eval=FALSE}
+cv_46 <- cv_err_wts(orig.path="path_46.0.RData", cv.path.list=paste0("path_46.", 1:5, ".RData"))
+cv_46$cv.1se.l1
+#[1] 142
+path <- getobj("path_46.0.RData")
+selected_fit <- path$JADE_fits[[cv_46$cv.1se.l1]]
+
+library(IRanges)
+sep.tab <- get_separated_regions(selected_fit)
+reads[is.na(reads)] <- 0
+selected_fitplot <- plot_jade(fits=selected_fit$fits, pos=selected_fit$pos,
+                              reads=reads, sep.tab = sep.tab$merged, ylim=c(0, 1),
+                              cols=c("black", "violetRed", "seagreen")) 
 ```
