@@ -94,7 +94,7 @@ get_separated_regions <- function(fit, which.window=1, chr="chr22", new.tol=NULL
       for(j in 1:(K-1)){
         for(l in (j+1):K){
           if(length(p)==1){
-            res.tab.sep[i, paste("AvgGap", j, l, sep="")]  = abs(g <- f[,j]-f[,l])
+            res.tab.merge[i, paste("AvgGap", j, l, sep="")]  = abs(g <- f[,j]-f[,l])
           }else{
             g <- f[,j]-f[,l]
             res.tab.merge[i, paste("AvgGap", j, l, sep="")] <- sum(diff(p)*rollmean(abs(g),2))/(max(p)-min(p))
