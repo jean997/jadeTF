@@ -14,7 +14,7 @@ Morrison, J., Witten, D., & Simon, N. (2016). Joint Adaptive Differential Estima
 
 
 ## Download the Data
-To do this analysis we will need the jadeTF R package and data. We downloaded .bed files for three cell types in different developmental stages of the skeletal muscle lineage from ENCODE. In this analysis we onlly use chromosome 22. The sorted chromosme 22 data we use are available in a gzipped archive [here](link to github)
+To do this analysis we will need the jadeTF R package and data. We downloaded .bed files for three cell types in different developmental stages of the skeletal muscle lineage from ENCODE. In this analysis we onlly use chromosome 22. The sorted chromosme 22 data we use are available in a gzipped archive [here](http://depts.washington.edu/slablab/data/methylation_bed_files.tar.gz)
 
 These are the original ENCODE sources:
 ([Myoblast](https://www.encodeproject.org/experiments/ENCSR000DFD/))
@@ -215,7 +215,7 @@ cv_fit0(orig.fit=fit0, which.fold=1:5, n.folds=5,
 ```{r, eval=FALSE}
  path <- jade_path(fit0 =paste0("fit0_", i, ".0.RData"), out.file=paste0("path_",i, ".0.RData"), 
                     adjust.rho.alpha=TRUE, log.gamma.min=-10,
-                    tol=5e-3, n.fits = 100, max.it = 50000)
+                    tol=5e-3, n.fits = 100, max.it = 5000)
 ### Long output of jade_path omitted #####
 ```
 
