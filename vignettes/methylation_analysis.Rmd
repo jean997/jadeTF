@@ -185,7 +185,7 @@ To run JADE for each window, we simply extract the relevant data from `sk_mt_mb_
  save(fit0, file=paste0("fit0_", i, ".0.RData"))
  
  #Plot!
-f0_dataplot <- jadeTF:::plot_data(counts=counts, reads=reads, pos=pos, cols=c("black", "violetRed", "seagreen"))
+f0_dataplot <- jadeTF:::plot_data(counts=counts, reads=reads, pos=pos, cols=c("black", "violetRed", "seagreen"), shapes=c(15, 18, 16))
 f0_fitplot <- plot_jade(fits=fit0$fits, wsize=100, pos=pos, reads=reads, ylim=c(0, 1)) 
 ```
 
@@ -240,11 +240,15 @@ cv_46$cv.1se.l1
 #[1] 142
 path <- getobj("path_46.0.RData")
 selected_fit <- path$JADE_fits[[cv_46$cv.1se.l1]]
-
+#Move back to the original psition scale for plotting
+i <- 46
+pos <- sk_mt_mb_data$pos[windows$start[i]:windows$stop[i]]
+selected_fit$pos <- pos
 library(IRanges)
 sep.tab <- get_separated_regions(selected_fit)
 reads[is.na(reads)] <- 0
-selected_fitplot <- plot_jade(fits=selected_fit$fits, pos=selected_fit$pos,
+selected_fitplot <- plot_jade(fits=selected_fit$fits, pos=pos, 
+                              ylab="Methylation Proportion",
                               reads=reads, sep.tab = sep.tab$merged, ylim=c(0, 1),
                               cols=c("black", "violetRed", "seagreen")) 
 ```
