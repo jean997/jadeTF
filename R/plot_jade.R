@@ -1,6 +1,7 @@
 
 plot_data <- function(counts, reads, pos, ylim=c(0, 1), cols=NULL,
                       range=NULL, sep.tab=NULL, bg.color="blue",
+                      shapes = NULL,
                       xlab="Position", ylab="Methylation Proportion"){
   if(!is.matrix(counts)){
 				K=1
@@ -19,6 +20,7 @@ plot_data <- function(counts, reads, pos, ylim=c(0, 1), cols=NULL,
 	  cols=c("black", "red3", "blue2")
 	  if(K >3) cols <- c(cols, 4:(K-3))
 	}
+	if(is.null(shapes)) shapes <- rep(20, K)
 	if(is.null(range)){
 		range <- range(pos)
 		idx <- 1:p
@@ -30,20 +32,31 @@ plot_data <- function(counts, reads, pos, ylim=c(0, 1), cols=NULL,
 	p <- length(pos)
   data.full <- (counts/reads)[idx,]
 
-	df <- data.frame(pos, data.full, reads)
-  names(df) <- c("pos", paste("y", 1:K, sep=""), paste("r", 1:K, sep=""))
-	h <- ggplot(df) + theme_bw()
+	dfdat <- data.frame(pos, data.full)
+	names(dfdat) <- c("pos", paste("y", 1:K, sep=""))
+	dfdat_long <- gather(dfdat, "sample", "prop", -pos)
+
+	dfreads <- data.frame(pos, reads)
+	names(dfreads) <- c("pos", paste0("y", 1:K))
+	dfreads_long <- gather(dfreads, "sample", "reads", -pos)
+
+  stopifnot(all(dfreads_long$pos == dfdat_long$pos))
+  stopifnot(all(dfreads_long$sample == dfdat_long$sample))
+  dfdat_long$reads <- dfreads_long$reads
+
+  dfdat_long$sample <- factor(dfdat_long$sample, levels=paste0("y", 1:K))
+
+	h <- ggplot(dfdat_long) + theme_bw()
 	#Background colors
 	if(!is.null(sep.tab)){
 	  h <- h + gg_sep_rect(sep.tab, color = bg.color, alpha=0.2)
 	}
-  for(j in 1:K){
-			h <- h + geom_point(aes_string(x="pos", y=paste("y", j, sep=""),
-			                               size=paste("r", j, sep="")), col=cols[j], alpha=1)
-  }
-  return(h + scale_size_area() + ylim(ylim)+ labs(x=xlab, y=ylab) + theme(legend.position="none",
-                                                   text=element_text(size=15))
-         )
+	h <- h + geom_point(aes(x=pos, y=prop, col=sample, group=sample, shape=sample, size=reads)) +
+	  scale_color_manual(values=cols) + scale_shape_manual(values=shapes) +
+   scale_size_area() + ylim(ylim)+ labs(x=xlab, y=ylab) + theme(legend.position="none",
+                                                                text=element_text(size=15))
+	return(h)
+
 }
 
 #' Plot a JADE fit
@@ -58,13 +71,10 @@ plot_data <- function(counts, reads, pos, ylim=c(0, 1), cols=NULL,
 #' This can be obtained using \code{\link{get_separated_regions}}.
 #' @return A \code{ggplot} object for the desred plot.
 #' @export
-plot_jade <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
+plot_jade <- function(fits,  pos, reads=NULL, cols=NULL, ltys=NULL,
                        range=NULL, wsize=10, maxcov=Inf, take.log.cov=FALSE,
                        maxwidth=3, minwidth=0.5,  ylim=NULL, sep.tab=NULL,
                       ylab=NULL, xlab="Position", bg.color="blue"){
-
-  if(!is.null(y)) plot.data=TRUE
-	  else plot.data=FALSE
 
 	if(class(fits)=="numeric"){
 			p <- length(fits)
@@ -98,14 +108,11 @@ plot_jade <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
 	}
 	p <- length(pos)
 
-	if(!is.null(y)) data.full <- y[idx,, drop=FALSE]
-	   else data.full <- matrix(NA, nrow=p, ncol=K)
 
   if(!is.null(reads)) reads.full <- reads[idx,, drop=FALSE]
 	  else reads.full <- matrix(1, nrow=p, ncol=K)
 
-	if(is.null(ylim) & !plot.data) ylim=range(fits)
-	  else if(is.null(ylim)) ylim=range(cbind(data.full, fits))
+	if(is.null(ylim)) ylim=range(fits)
 
 	window.coverage <- matrix(NA, nrow=p, ncol=K)
 	for(i in 1:p){
@@ -124,29 +131,37 @@ plot_jade <- function(fits,  pos, y=NULL, reads=NULL, cols=NULL,
 		window.coverage[window.coverage== -Inf] <- 0
 	}
 
+	dffit <- data.frame(pos, fits)
+	names(dffit) <- c("pos", paste0("y", 1:K))
+	dffit_long <- gather(dffit, "sample", "y", -pos)
 
-	df <- data.frame(pos, fits, window.coverage, data.full, reads.full)
-  names(df) <- c("pos", paste("t", 1:K, sep=""), paste("w", 1:K, sep=""), paste("y", 1:K, sep=""), paste("r", 1:K, sep=""))
-	h <- ggplot(df) + theme_bw()
+	dfcov <- data.frame(pos, window.coverage)
+	names(dfcov) <- c("pos", paste0("y", 1:K))
+	dfcov_long <- gather(dfcov, "sample", "cov", -pos)
+
+	stopifnot(all(dfcov_long$pos==dffit_long$pos))
+	stopifnot(all(dfcov_long$sample==dffit_long$sample))
+	dffit_long$cov <- dfcov_long$cov
+
+
+	h <- ggplot(dffit_long) + theme_bw()
 
 	#Background colors
 	if(!is.null(sep.tab)){
 		h <- h + gg_sep_rect(sep.tab, color = bg.color, alpha=0.2)
 	}
 
-	for(j in 1:K){
-		h <- h +  geom_line(aes_string(x="pos", y=paste("t", j, sep=""), size=paste("w", j, sep="")),
-		                    col=cols[j], alpha=alpha)
-	}
+  if(is.null(ltys)){
+	  h <- h +  geom_line(aes(x=pos, y=y, size=cov, col=sample, group=sample), alpha=alpha) +
+	      scale_color_manual(values=cols) + scale_size(range=c(minwidth, maxwidth))
+  }else{
+    cat("Warning: If using dotted lines, line width must be constant\n")
+    h <- h +  geom_line(aes(x=pos, y=y, linetype=sample, col=sample, group=sample),
+                        alpha=alpha, lwd=1.5) +
+      scale_color_manual(values=cols) + scale_linetype_manual(values=ltys)
+  }
 
-	if(plot.data){
-	  for(j in 1:K){
-	    h <- h + geom_point(aes_string(x="pos", y=paste("y", j, sep="")),
-	                        col=cols[j], size=2, shape=1)
-	  }
-	}
-	R <- h + scale_x_continuous(minor_breaks=pos) +
-	  ylim(ylim) + scale_size(range=c(minwidth, maxwidth))
+	R <- h + scale_x_continuous(minor_breaks=pos) + ylim(ylim)
 	if(is.null(xlab) & is.null(ylab)){
 	  R <- R + theme(legend.position="none",
 	                 axis.title.x=element_blank(),
